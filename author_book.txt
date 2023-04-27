@@ -1,0 +1,117 @@
+9780007117307	C.S. Lewis	
+9780007382161	Roderick Beaton	
+9780060850524	Aldous Huxley	
+9780061120084	Harper Lee	
+9780061122415	Paulo Coelho	
+9780062068422	Jo Nesbø	
+9780062073488	Agatha Christie	
+9780062073556	Agatha Christie	
+9780062073587	Agatha Christie	
+9780062073617	Agatha Christie	
+9780062073693	Agatha Christie	
+9780062073778	Agatha Christie	
+9780062693662	Agatha Christie	
+9780064471046	C.S. Lewis	
+9780099546776	Jo Nesbø	
+9780099546790	Jo Nesbø	
+9780123456789	Alexander Thompson	
+9780140233773	Misha Glenny	
+9780140439120	Charles Darwin	
+9780140440119	Steven Runciman	
+9780140440393	Thucydides	
+9780141439518	Jane Austen	
+9780199291151	Richard Dawkins	
+9780199672776	Kostas Vlassopoulos	
+9780224094153	Julian Barnes	
+9780226458083	Thomas S. Kuhn	
+9780307269751	Stieg Larsson	
+9780307948687	Jo Nesbø	
+9780307960474	Jo Nesbø	
+9780307960498	Jo Nesbø	
+9780312367541	Madeleine L'Engle	
+9780316769488	J.D. Salinger	
+9780345409461	Carl Sagan	
+9780345807090	Jo Nesbø	
+9780345807151	Jo Nesbø	
+9780374332662	Louis Sachar	
+9780375708114	Brian Greene	
+9780375869020	R.J. Palacio	
+9780385495318	Simon Singh	
+9780385504201	Dan Brown	
+9780399563126	Jennifer Ackerman	
+9780435123653	Frances Hodgson Burnett	
+9780439023481	Suzanne Collins	
+9780440418320	Philip Pullman	
+9780451524935	George Orwell	
+9780451526342	George Orwell	
+9780486278070	Oscar Wilde	
+9780521004794	Richard Clogg	
+9780525432322	Jo Nesbø	
+9780525432483	Jo Nesbø	
+9780525478812	John Green	
+9780544336261	Lois Lowry	
+9780547928227	J.R.R. Tolkien	
+9780553380163	Stephen Hawking	
+9780571207045	Nikos Kazantzakis	
+9780571229214	Nikos Kazantzakis	
+9780571321708	Nikos Kazantzakis	
+9780571321715	Nikos Kazantzakis	
+9780590406712	Frances Hodgson Burnett	
+9780684169964	Nikos Kazantzakis	
+9780684803355	James D. Watson	
+9780684825546	Nikos Kazantzakis	
+9780684834951	Nikos Kazantzakis	
+9780684841263	Nikos Kazantzakis	
+9780743273565	F. Scott Fitzgerald	
+9780747532743	J.K. Rowling	
+9780753820254	Carlos Ruiz Zafón	
+9780786838653	Rick Riordan	
+9781234567890	Emily Adams	
+9781250062185	Elizabeth Kolbert	
+9781416561111	Craig Childs	
+9781423106977	Rick Riordan	
+9781451697728	Sy Montgomery	
+9781480437678	David Brewer	
+9781577316493	Marc Bekoff	
+9781609450786	Elena Ferrante	
+9781771642484	Peter Wohlleben	
+9781771643016	Rosamund Young	
+9781781855869	Sofka Zinovieff	
+9781844675639	David Brewer	
+9781846689953	Yanis Varoufakis	
+9781849048134	Nikos Kazantzakis	
+9781904955768	Michael Llewellyn Smith	
+9781933372600	Muriel Barbery	
+9782070360024	Albert Camus	
+9782070360420	Albert Camus	
+9782070361878	Alain Damasio	
+9782070401834	Victor Hugo	
+9782070409274	Charles Baudelaire	
+9782070612758	Antoine de Saint-Exupéry	
+9782253002381	Guy de Maupassant	
+9782253004224	Choderlos de Laclos	
+9782345678901	Michael Davis	
+9783456789012	Sophia Johnson	
+9784567890123	Alex Martinez	
+9785678901234	Olivia Wilson	
+9786789012345	David Thompson	
+9787890123456	Isabella Anderson	
+9788901234567	Matthew Harris	
+9789012345678	Sophia Smith	
+9789600415584	Katerina Gogou	
+9789600419247	Dimitris Papadimitriou	
+9789600432437	Vassilis Vassilikos	
+9789600432895	Victoria Hislop	
+9789601425009	Sophia Nikolaidou	
+9789601660105	Kostas Skandalis	
+9789601662741	Christos Georgiou	
+9789601663069	Manolis Papagrigorakis	
+9789603103397	Michalis Axenides	
+9789603991473	Vassilis Koliatsos	
+9789603995044	Konstantinos Dimas	
+9789604062389	Nikos Papamichael	
+9789604587546	Dimitrios Christodoulou	
+9789601425009   Vassilis Koliatsos
+9789012345678	Matthew Harris
+9789603103397	Vassilis Vassilikos	
+9789603103397	Kostas Skandalis
