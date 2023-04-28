@@ -12,6 +12,7 @@ CREATE TABLE schools (
 	PRIMARY KEY(school_id)
 );
 
+
 CREATE TABLE books (
 	title VARCHAR(80) NOT NULL,
 	publisher VARCHAR(40) NOT NULL,
