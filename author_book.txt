@@ -3,7 +3,7 @@
 9780060850524	Aldous Huxley	
 9780061120084	Harper Lee	
 9780061122415	Paulo Coelho	
-9780062068422	Jo Nesbø	
+9780062068422	Jo Nesbo
 9780062073488	Agatha Christie	
 9780062073556	Agatha Christie	
 9780062073587	Agatha Christie	
@@ -87,7 +87,7 @@
 9782070361878	Alain Damasio	
 9782070401834	Victor Hugo	
 9782070409274	Charles Baudelaire	
-9782070612758	Antoine de Saint-Exupéry	
+9782070612758	Antoine de Saint-Exupery	
 9782253002381	Guy de Maupassant	
 9782253004224	Choderlos de Laclos	
 9782345678901	Michael Davis	
