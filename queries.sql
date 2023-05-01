@@ -23,3 +23,16 @@ INNER JOIN lending l
 ON s.school_id = l.school_id WHERE YEAR(l.borrow_date) = 2022 AND MONTH(l.borrow_date) = 12
 GROUP BY s.name
 ORDER BY count(*) DESC;
+
+-- 3.1.2
+-- For a specific category, show all authors in that category 
+-- And the teachers that have borrowed books from that category in the last year
+SELECT a.name from author a 
+INNER JOIN author_book ab
+ON a.author_id=ab.author_id
+INNER JOIN books b
+ON ab.ISBN = b.ISBN 
+INNER JOIN book_category bc
+ON bc.ISBN = b.ISBN
+INNER JOIN category c
+ON c.category_id = bc.category_id WHERE c.name = 'History'
