@@ -36,3 +36,14 @@ INNER JOIN book_category bc
 ON bc.ISBN = b.ISBN
 INNER JOIN category c
 ON c.category_id = bc.category_id WHERE c.name = 'History'
+
+SELECT u.name from users u
+INNER JOIN lending l
+ON l.id_user = u.id_user
+INNER JOIN books b
+ON l.ISBN = b.ISBN 
+INNER JOIN book_category bc
+ON bc.ISBN = b.ISBN
+INNER JOIN category c
+ON c.category_id = bc.category_id 
+WHERE c.name = 'Biography' AND u.role = 1 AND YEAR(l.borrow_date) = YEAR(CURDATE())
