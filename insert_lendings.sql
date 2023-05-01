@@ -42,3 +42,10 @@ INSERT INTO lending(borrow_date, return_date, id_user, ISBN, school_id)
 VALUES
 ('2022-12-5', '2022-12-10', 28, 9780684841263, 4);
 
+INSERT INTO lending(borrow_date, return_date, id_user, ISBN, school_id)
+VALUES
+('2022-10-05', '2022-11-01', 28, 9780684825546, 4);
+
+INSERT INTO lending(borrow_date, return_date, id_user, ISBN, school_id)
+VALUES
+('2022-10-05', '2022-11-01', 16, 9780099546790, 3);

@@ -47,3 +47,46 @@ ON bc.ISBN = b.ISBN
 INNER JOIN category c
 ON c.category_id = bc.category_id 
 WHERE c.name = 'Biography' AND u.role = 1 AND YEAR(l.borrow_date) = YEAR(CURDATE())
+
+-- 3.1.5
+-- Returns name of school manager and total number of lendings
+SELECT u.name, tt.count FROM users u
+INNER JOIN (
+    SELECT tt1.school_id, tt1.count
+    FROM (SELECT count(*) as count, school_id FROM lending GROUP BY school_id) tt1
+    INNER JOIN (SELECT count(*) as count, school_id FROM lending GROUP BY school_id) tt2 
+    ON tt1.count = tt2.count
+    WHERE tt1.school_id <> tt2.school_id ) tt
+ON u.school_id = tt.school_id
+WHERE u.role = 2 AND tt.count > 2
+GROUP BY u.name
+ORDER BY tt.count;
+
+-- 3.1.6
+-- Returns top 3 couples of categories that show up in lendings
+SELECT c1.name as 'Category 1', c2.name as 'Category 2', cat_ids.cnt FROM (category c1, category c2)
+INNER JOIN
+    (SELECT cj.cat1 as ct1, cj.cat2 as ct2, count(*) as cnt FROM
+        (SELECT cj1.category_id as cat1, cj2.category_id as cat2 FROM 
+                (SELECT c.category_id, c.ISBN FROM book_category c
+                INNER JOIN lending l
+                ON c.ISBN = l.ISBN) cj1
+            CROSS JOIN 
+                (SELECT c.category_id, c.ISBN FROM book_category c
+                INNER JOIN lending l
+                ON c.ISBN = l.ISBN) cj2 
+        WHERE cj1.ISBN = cj2.ISBN AND cj1.category_id < cj2.category_id
+        ORDER BY cat1, cat2) cj
+    GROUP BY cj.cat1, cj.cat2
+    ORDER BY count(*) DESC) cat_ids
+ON c1.category_id = cat_ids.ct1 AND c2.category_id = cat_ids.ct2
+
+-- 3.1.7
+-- Returns the authors that have written at least 5 books less than the author of the most books
+SELECT a.name, a_with_less_books.cnt FROM author a
+INNER JOIN
+    (WITH mx(value) as (SELECT MAX(cnt) FROM (SELECT count(*) as cnt FROM author_book ab GROUP BY ab.author_id) m)
+        SELECT ab1.author_id as id, ab1.cnt as cnt, mx.value
+        FROM (SELECT ab.author_id as author_id, count(*) as cnt FROM author_book ab GROUP BY ab.author_id) ab1, mx
+        HAVING ab1.cnt < mx.value-4) a_with_less_books
+ON a.author_id = a_with_less_books.id
