@@ -26,6 +26,8 @@ SET time_zone = "+00:00";
 --
 -- Δομή πίνακα για τον πίνακα `author`
 --
+CREATE DATABASE school_libraries;
+USE school_libraries;
 
 CREATE TABLE `author` (
   `author_id` int(11) NOT NULL,
@@ -55,7 +57,7 @@ INSERT INTO `author` (`author_id`, `name`) VALUES
 (16, 'Julian Barnes'),
 (17, 'Thomas S. Kuhn'),
 (18, 'Stieg Larsson'),
-(19, 'Madeleine L\'Engle'),
+(19, "Madeleine L 'Engle"),
 (20, 'J.D. Salinger'),
 (21, 'Carl Sagan'),
 (22, 'Louis Sachar'),
@@ -292,7 +294,7 @@ INSERT INTO `books` (`title`, `publisher`, `ISBN`, `page_number`, `summary`, `bo
 ('Brave New World', 'Chatto & Windus', '9780060850524', 288, 'The novel anticipates developments in reproductive technology, sleep-learning, psychological manipulation, and classical conditioning that are combined to make a dystopian society which is challenged by only a single individual: the storys protagonist.', 'English', 'Dystopian, Science fiction'),
 ('To Kill a Mockingbird', 'J. B. Lippincott & Co.', '9780061120084', 281, 'The story takes place during three years of the Great Depression in the fictional \"tired old town\" of Maycomb, Alabama.', 'English', 'Classic, Social justice'),
 ('The Alchemist', 'HarperCollins', '9780061122415', 208, 'The Alchemist follows the journey of an Andalusian shepherd boy named Santiago who dreams of discovering a treasure hidden in the Egyptian pyramids. Along the way, he meets a series of characters who teach him important lessons about life and love.', 'English', 'Fable, Quest'),
-('The Redbreast', 'Vintage Crime/Black Lizard', '9780062068422', 544, 'The Redbreast is the third novel featuring Harry Hole, and explores the connections between Norway\'s Nazi past and a series of murders. The novel was praised for its intricate plot and characterization.', 'English', 'Crime fiction, Detective, Norway'),
+('The Redbreast', 'Vintage Crime/Black Lizard', '9780062068422', 544, 'The Redbreast is the third novel featuring Harry Hole, and explores the connections between Norway \'s\ Nazi past and a series of murders. The novel was praised for its intricate plot and characterization.', 'English', 'Crime fiction, Detective, Norway'),
 ('And Then There Were None', 'HarperCollins', '9780062073488', 272, 'A suspenseful murder mystery on an isolated island', 'English', 'Fiction, Mystery, Suspense'),
 ('Death on the Nile', 'HarperCollins', '9780062073556', 352, 'A thrilling murder mystery set aboard a luxury cruise ship', 'English', 'Fiction, Mystery, Detective'),
 ('The A.B.C. Murders', 'HarperCollins', '9780062073587', 256, 'A race against time to catch a serial killer', 'English', 'Fiction, Mystery, Detective'),
