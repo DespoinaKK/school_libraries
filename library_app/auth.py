@@ -3,6 +3,7 @@ from flask_mysqldb import MySQL
 import functools 
 
 
+
 app = Flask(__name__)
  
 app.config['MYSQL_HOST'] = '127.0.0.1'
@@ -24,13 +25,15 @@ def login():
         message = None
         cur.execute('''SELECT * FROM users WHERE username = %s AND password = %s;''', (username, password))
         user = cur.fetchone()
-        print(user)
+        
         if user:
             session.clear()
             session['loggedin'] = True
             session['userid'] = user[0]
             session['name'] = user[1]
-            return redirect('/hello')
+            print(user[0])
+            print(user[1])
+            return redirect('/auth/user')
 
         else:
             flash("incorrect data")
@@ -38,3 +41,17 @@ def login():
     return render_template('login.html')
 
 
+@bp.route('/user', methods=('GET', 'POST'))
+def show_books():
+    if request.method == 'POST':
+        pid = session['userid']
+        print(pid)
+        cur = mysql.connection.cursor()
+        cur.execute('''SELECT * FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s;''', [pid])
+        book = cur.fetchall()
+        print(book)
+        return render_template('my_books.html', books=book)
+    elif request.method == 'GET':
+        return render_template('user.html')
+    
+    
