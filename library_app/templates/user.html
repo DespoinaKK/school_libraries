@@ -9,7 +9,7 @@
 
         </form>
             <form method="POST">
-                <select name="options[]" multiple>
+
                     {% for category in categories %}
                         <label>
                             <input type="checkbox" name="{{ category[1] }}">
@@ -18,7 +18,7 @@
                         </label>
 
                     {% endfor %}
-                </select>
+                
                 
                 <input type="submit" value="Search">
             </form>
