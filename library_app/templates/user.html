@@ -3,27 +3,30 @@
         <title>Home</title>
     </head>
     <body>
-        <h1>Welcome user</h1>
+        <h1>Welcome {{ name }}</h1>
+
         <form method="post">
-            <input type="submit" name = "show books" value="Show books">
+            <input type="submit" name = "show books" value="Show my lending history">
 
         </form>
             <form method="POST">
-                <select name="options[]" multiple>
+                <h2>Choose categories</h2>
                     {% for category in categories %}
                         <label>
-                            <input type="checkbox" name="{{ category[1] }}">
+                            <input type="checkbox" name="options[]" value="{{ category[0] }}">
                             {{ category[1] }}
                             <br>
                         </label>
 
                     {% endfor %}
-                </select>
                 
-                <input type="submit" value="Search">
+                
+                <input type="submit" name="search category" value="Search">
             </form>
-  
-  
+            {% for mesg in get_flashed_messages() %}
+            <p>{{ mesg }}</p>
+            {% endfor %}
+
     </body>
 </html>
 
