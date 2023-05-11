@@ -40,4 +40,7 @@ def create_app(test_config=None):
     from . import auth
     app.register_blueprint(auth.bp)
 
+    
+    if __name__ == "__main__" : 
+        app.run(debug=True)
     return app

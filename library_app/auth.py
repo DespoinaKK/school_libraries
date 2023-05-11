@@ -43,6 +43,10 @@ def login():
 
 @bp.route('/user', methods=('GET', 'POST'))
 def show_books():
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM `category`")
+    categories = cursor.fetchall()
+
     if request.method == 'POST':
         pid = session['userid']
         print(pid)
@@ -52,6 +56,4 @@ def show_books():
         print(book)
         return render_template('my_books.html', books=book)
     elif request.method == 'GET':
-        return render_template('user.html')
-    
-    
+        return render_template('user.html', categories=categories)

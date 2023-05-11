@@ -6,6 +6,25 @@
         <h1>Welcome user</h1>
         <form method="post">
             <input type="submit" name = "show books" value="Show books">
+
         </form>
+            <form method="POST">
+                <select name="options[]" multiple>
+                    {% for category in categories %}
+                        <label>
+                            <input type="checkbox" name="{{ category[1] }}">
+                            {{ category[1] }}
+                            <br>
+                        </label>
+
+                    {% endfor %}
+                </select>
+                
+                <input type="submit" value="Search">
+            </form>
+  
+  
     </body>
 </html>
+
+

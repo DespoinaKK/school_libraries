@@ -5,11 +5,11 @@
     <body>
         <h1>Βιβλία</h1>
         {% block content %}
-        <article>
+        <!-- <article> -->
         {% for book in books: %}
             <h1>{{ book[6] }}</h1>
             <p>{{ book[4] }}</p>
-        </article>
+        <!-- </article> -->
         {% if not loop.last %}
             <hr>
         {% endif %}
