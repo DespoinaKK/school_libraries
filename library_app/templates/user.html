@@ -10,7 +10,7 @@
 
         </form>
             <form method="POST">
-                <h2>Choose categories</h2>
+                <select name="options[]" multiple>
                     {% for category in categories %}
                         <label>
                             <input type="checkbox" name="options[]" value="{{ category[0] }}">
