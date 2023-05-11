@@ -1,4 +1,4 @@
-from flask import Flask,render_template, request,redirect,Blueprint,flash,session, url_for
+from flask import Flask,render_template, request,redirect,Blueprint,flash,session, url_for, g
 from flask_mysqldb import MySQL
 import functools 
 
@@ -15,6 +15,60 @@ mysql = MySQL(app)
 
 bp = Blueprint('auth',__name__, url_prefix='/')
 
+@bp.route('/', methods=('GET', 'POST'))
+def home():
+    return render_template('base.html', session = session)
+
+@bp.route('/register', methods=('GET', 'POST'))
+def register():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT school_id, name FROM `schools` ORDER BY name")
+    schools = cur.fetchall()
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        school_id = request.form.get('schools')
+        name = request.form['name']
+        birthday = request.form['birthday']
+        role = request.form.get('role')
+        invalid_char = False
+        if len(username) > 15 or len(password) > 15:
+            invalid_char = True
+            flash('Up to 15 characters can be used for username and password')
+        special_characters = '''"'!@#$%^&*()-+?=,<>/'''
+        if not username.islower() or any(c in special_characters for c in username) :
+            invalid_char = True
+            flash('Username must contain only lowercase latin letters or _')
+        if not (name.isalpha() or ' ' in name):
+            invalid_char = True
+            flash('Only latin characters can be used for name')
+        if invalid_char:
+            return render_template('register.html', schools = schools)
+        else:
+            cur_username = mysql.connection.cursor()
+            cur_username.execute('''(SELECT * FROM users WHERE username = %s) \
+                UNION (SELECT * FROM users_unregistered WHERE username = %s);''',\
+                                  (username,username))
+            exists = cur_username.fetchall()
+            if exists:
+                flash('This username is already being used. Choose a different one')
+                return render_template('register.html', schools = schools)
+            else:
+                # valid username
+                # pending registration
+                # insert to users_unregistered
+                cur_insert = mysql.connection.cursor()
+                cur_insert.execute('''INSERT INTO users_unregistered (name, username, password, school_id, role, birthday) \
+                    VALUES ('{name}', '{username}', '{password}', {school_id}, {role}, '{birthday}');'''.format(name=name,\
+                             username=username, password=password,school_id=school_id, role=role, birthday=birthday))
+                mysql.connection.commit()
+                return render_template('register.html', schools = schools)
+    return render_template('register.html', schools = schools)
+
+@bp.route('/logout', methods=('GET', 'POST'))
+def logout():
+    session['loggedin'] = False
+    return redirect('/')
 
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
@@ -31,6 +85,7 @@ def login():
             session['loggedin'] = True
             session['userid'] = user[0]
             session['name'] = user[1]
+            session['username'] = username
             return redirect('/user')
 
         else:
@@ -70,7 +125,7 @@ def show_books():
            books = search_cur.fetchall()
            if books == ():
                flash("no results found")
-               return redirect('/auth/user')
+               return redirect('/user')
            else:
                return render_template('search.html', books = books)
         
