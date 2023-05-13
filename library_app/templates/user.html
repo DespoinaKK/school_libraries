@@ -19,14 +19,16 @@
                         </label>
 
                     {% endfor %}
-                
-                
-                <input type="submit" name="search category" value="Search">
+                <h2>Choose author</h2>
+                <label for="author">Author:</label>
+                <input name="author" id="author">
+                <br>
+                <br>
+                <input type="submit" name="search" value="Search">
             </form>
             {% for mesg in get_flashed_messages() %}
             <p>{{ mesg }}</p>
             {% endfor %}
-
     </body>
     
 </html>

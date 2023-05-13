@@ -1,18 +1,16 @@
-{% extends 'base.html' %}
-
-
 <html>
     <head>
-        <title>Ιστορικό Δανεισμού</title>
+        <title>Lending History</title>
     </head>
     <body>
-        <h1>Βιβλία</h1>
+        <h1>Books I have borrowed</h1>
         {% block content %}
-        <!-- <article> -->
+
         {% for book in books: %}
-            <h1>{{ book[6] }}</h1>
-            <p>{{ book[4] }}</p>
-        <!-- </article> -->
+            <h2>{{ book[6] }}</h2>
+            <p>ISBN: {{ book[4] }}</p>
+            <p>Borrowed: {{ book[1] }}</p>
+            <p>Returned: {{ book[2] }}</p>
         {% if not loop.last %}
             <hr>
         {% endif %}

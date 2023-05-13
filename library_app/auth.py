@@ -79,6 +79,7 @@ def login():
         message = None
         cur.execute('''SELECT * FROM users WHERE username = %s AND password = %s;''', (username, password))
         user = cur.fetchone()
+        cur.close()
         
         if user:
             session.clear()
@@ -108,23 +109,58 @@ def show_books():
             cur = mysql.connection.cursor()
             cur.execute('''SELECT * FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s;''', [pid])
             book = cur.fetchall()
+            cur.close()
             return render_template('my_books.html', books=book)
 
-        if request.form.get('search category'):
+        if request.form.get('search'):
            options = request.form.getlist('options[]')
-           search_cur = mysql.connection.cursor()
-           query = []
-           for option in options:
-                query.append('''(SELECT ISBN FROM book_category WHERE category_id = %s)''' % (option))
-           u = " INTERSECT "
-           u = u.join(query)
-           u = "(" + u + ") bk"
-           print('''SELECT * FROM ''' + u + ''' INNER JOIN books b on bk.ISBN = b.ISBN;''')
-           search_cur.execute('''SELECT * FROM ''' + u + ''' INNER JOIN books b on bk.ISBN = b.ISBN \
-           INNER JOIN book_school bs on bs.ISBN = b.ISBN WHERE bs.school_id = %s;''', [school_id])
-           books = search_cur.fetchall()
+           cat = False
+           if options != []:
+                cat = True   # categories where chosen
+                search_cur = mysql.connection.cursor()
+                query = []
+                for option in options:
+                     query.append('''(SELECT ISBN FROM book_category WHERE category_id = %s)''' % (option))
+                u = " INTERSECT "
+                u = u.join(query)
+                u = "(" + u + ") bk"
+                
+                q1 = '''SELECT * FROM ''' + u + ''' INNER JOIN books b on bk.ISBN = b.ISBN''' #store query to use later
+                
+                search_cur.execute('''SELECT * FROM ''' + u + ''' INNER JOIN books b on bk.ISBN = b.ISBN \
+                INNER JOIN book_school bs on bs.ISBN = b.ISBN WHERE bs.school_id = %s;''', [school_id])
+                books1 = search_cur.fetchall()
+                search_cur.close()
+           
+           author = request.form['author']
+           if author:
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT * FROM author WHERE name = %s;''', [author])
+                author = cur.fetchone()
+                if author:
+                    author_id = author[0]
+                    cur.execute('''SELECT b.ISBN, b.title FROM author a INNER JOIN author_book ab on a.author_id =  ab.author_id \
+                            INNER JOIN books b on ab.ISBN = b.ISBN \
+                            INNER JOIN book_school bs on bs.ISBN = b.ISBN WHERE bs.school_id = %s AND a.author_id = %s;''', [school_id, author_id])
+                    
+                    books2 = cur.fetchall()
+                    
+                    if cat: 
+                        cur.execute(q1 + ''' INNER JOIN author_book ab on ab.ISBN = b.ISBN \
+                                    INNER JOIN book_school bs on bs.ISBN = b.ISBN WHERE bs.school_id = %s AND ab.author_id = %s;''' , [school_id, author_id])
+                        books = cur.fetchall()
+                    
+                    else:
+                        books = books2
+                    cur.close()
+                else:
+                    flash("The input author does not exist. Try again!")
+                    return redirect('/user')
+
+           else:
+               books = books1
            if books == ():
-               flash("no results found")
+               flash("No results found")
                return redirect('/user')
            else:
                return render_template('search.html', books = books)
@@ -141,4 +177,14 @@ def show_books():
 
 @bp.route('/details/<isbn>', methods=('GET', 'POST'))
 def details(isbn):
-    return render_template('book_details.html', isbn = isbn)
+    if request.method == 'GET':
+        cur = mysql.connection.cursor()
+        cur.execute('''SELECT * FROM books WHERE ISBN = %s;''',[isbn])
+        details = cur.fetchone()
+        cur.execute('''SELECT name FROM category c INNER JOIN book_category bk on c.category_id = bk.category_id \
+               where bk.ISBN = %s;''', [isbn])
+        categories = cur.fetchall()
+        cur.execute('''SELECT name FROM author a INNER JOIN author_book ab on a.author_id = ab.author_id \
+        where ab.ISBN = %s;''', [isbn])
+        authors = cur.fetchall()
+        return render_template('book_details.html', details = details, categories = categories, authors = authors)
