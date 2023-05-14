@@ -168,6 +168,19 @@ def show_books():
            else:
                return render_template('search.html', books = books)
         
+        if request.form.get('search title'):
+            title = request.form['title']
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+                  WHERE b.title = %s AND bs.school_id = %s;''', [title, school_id])
+            book = cur.fetchall()
+            cur.close()
+            if book:
+                return render_template('search.html', books = book)
+            else:
+                flash("No results found")
+                return redirect('/user')
+        
         if request.form.get('details'):
             isbn = request.form.get('details')
             return redirect(url_for(".details",isbn=isbn))
