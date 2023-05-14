@@ -1,8 +1,7 @@
 from flask import Flask,render_template, request,redirect,Blueprint,flash,session, url_for, g
 from flask_mysqldb import MySQL
 import functools 
-
-
+from datetime import datetime, date
 
 app = Flask(__name__)
  
@@ -67,7 +66,7 @@ def register():
 
 @bp.route('/logout', methods=('GET', 'POST'))
 def logout():
-    session['loggedin'] = False
+    session.clear()
     return redirect('/')
 
 @bp.route('/login', methods=('GET', 'POST'))
@@ -87,6 +86,10 @@ def login():
             session['userid'] = user[0]
             session['name'] = user[1]
             session['username'] = username
+            session['school_id'] = user[4]
+            role = user[5]
+            if role == 2:
+                return redirect('/manager')
             return redirect('/user')
 
         else:
@@ -173,18 +176,121 @@ def show_books():
     if request.method == 'GET':
         return render_template('user.html', categories=categories, name = name)
     
+@bp.route('/manager', methods=('GET', 'POST'))
+def manager_home():
+    if request.method == 'POST':
+        if request.form.get('Pending Lendings'):
+            return redirect('/manager/pending_lendings')
+        if request.form.get('Active Lendings'):
+            return redirect('/manager/active_lendings')
+    if request.method == 'GET':
+        return render_template('manager_home.html')
+
+@bp.route('/manager/pending_lendings', methods=('GET', 'POST'))
+def pending_lendings():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM booking ORDER BY date_of_booking;''')
+    bookings = list(cur.fetchall())
+    school_id = session['school_id']
+    title = []
+    booker_username = []
+    copies = []
+    active_lendings = []
+    for booking in bookings:
+        isbn = booking[3]
+        booker_id = booking[2]
+        cur.execute('''SELECT title FROM books WHERE ISBN=%s''', [isbn])
+        title.append(cur.fetchone())
+        cur.execute('''SELECT username FROM users WHERE id_user=%s''', [booker_id])
+        booker_username.append(cur.fetchone())
+        cur.execute(''' SELECT copies_available FROM book_school WHERE isbn = %s AND school_id = %s''', [isbn, school_id])
+        copies.append(cur.fetchone())
+        cur.execute('''SELECT count(*) FROM lending WHERE id_user = %s AND return_date is NULL''', [booker_id])
+        active_lendings.append(cur.fetchone())
+    cur.close()
+    if request.method == 'GET':
+        return render_template('pending_lendings.html', copies = copies, bookings = bookings, booker_username = booker_username,
+            title = title, active_lendings = active_lendings)
+    if request.method == 'POST':
+        if request.form.get('Lend'):
+            booking_id =  request.form.get('Lend')[7:]
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT * FROM booking WHERE booking_id = %s''', [booking_id])
+            books_to_lend = cur.fetchone()
+            cur = mysql.connection.cursor()
+            cur.execute('''INSERT INTO lending (borrow_date, id_user, ISBN, school_id) \
+                    VALUES ('{borrow_date}', {id_user}, '{ISBN}', {school_id});'''.format(borrow_date=date.today(),\
+                             id_user=books_to_lend[2], ISBN=books_to_lend[3],school_id=books_to_lend[4]))
+            cur.execute('''DELETE FROM booking WHERE booking_id = %s''', [booking_id])
+            mysql.connection.commit()
+            cur.close()
+            return redirect('/manager/pending_lendings')
+            
+
+@bp.route('/manager/active_lendings', methods=('GET', 'POST'))
+def active_lendings():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM lending WHERE return_date is NULL ORDER BY borrow_date DESC;''')
+    lendings = list(cur.fetchall())
+    school_id = session['school_id']
+    title = []
+    borrower_username = []
+    for lending in lendings:
+        isbn = lending[4]
+        borrower_id = lending[3]
+        cur.execute('''SELECT title FROM books WHERE ISBN=%s''', [isbn])
+        title.append(cur.fetchone())
+        cur.execute('''SELECT username FROM users WHERE id_user=%s''', [borrower_id])
+        borrower_username.append(cur.fetchone())
+    cur.close()
+    if request.method == 'GET':
+        return render_template('active_lendings.html', lendings = lendings, borrower_username = borrower_username,
+            title = title)
+    if request.method == 'POST':
+        if request.form.get('Return'):
+            lending_id =  request.form.get('Return')[9:]
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT * FROM lending WHERE lending_id = %s''', [lending_id])
+            books_to_return = cur.fetchone()
+            cur = mysql.connection.cursor()
+            cur.execute('''UPDATE lending SET return_date = %s WHERE lending_id = %s;''', [date.today(),lending_id])
+            mysql.connection.commit()
+            cur.close()
+            return redirect('/manager/active_lendings')
 
 
 @bp.route('/details/<isbn>', methods=('GET', 'POST'))
 def details(isbn):
-    if request.method == 'GET':
-        cur = mysql.connection.cursor()
-        cur.execute('''SELECT * FROM books WHERE ISBN = %s;''',[isbn])
-        details = cur.fetchone()
-        cur.execute('''SELECT name FROM category c INNER JOIN book_category bk on c.category_id = bk.category_id \
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM books WHERE ISBN = %s;''',[isbn])
+    details = cur.fetchone()
+    cur.execute('''SELECT name FROM category c INNER JOIN book_category bk on c.category_id = bk.category_id \
                where bk.ISBN = %s;''', [isbn])
-        categories = cur.fetchall()
-        cur.execute('''SELECT name FROM author a INNER JOIN author_book ab on a.author_id = ab.author_id \
-        where ab.ISBN = %s;''', [isbn])
-        authors = cur.fetchall()
+    categories = cur.fetchall()
+    cur.execute('''SELECT name FROM author a INNER JOIN author_book ab on a.author_id = ab.author_id \
+               where ab.ISBN = %s;''', [isbn])
+    authors = cur.fetchall()
+    cur.execute('''SELECT count(*) FROM booking WHERE id_user = %s''', [session['userid']])
+    no_of_active_bookings = cur.fetchone()[0]
+    can_book = True
+    cur.execute('''SELECT role FROM users WHERE id_user = %s''', [session['userid']])
+    role = cur.fetchone()[0]
+    if no_of_active_bookings >= 2 and role == 0:
+        can_book = False
+    elif no_of_active_bookings >= 1 and role == 1:
+        can_book = False
+    if request.method == 'GET':
         return render_template('book_details.html', details = details, categories = categories, authors = authors)
+    if request.method == 'POST':
+        if not can_book:
+            flash("You have reached your upper limit for the week. Try again later, or return any books you may have borrowed.")
+            return render_template('book_details.html', details = details, categories = categories, authors = authors)
+        now = datetime.now()
+        dt_string = now.strftime("%Y/%m/%d %H:%M:%S")
+        cur_insert = mysql.connection.cursor()
+        cur_insert.execute('''INSERT INTO booking (date_of_booking, id_user, ISBN, school_id) \
+                    VALUES ('{date_of_booking}', {id_user}, '{ISBN}', {school_id});'''.format(date_of_booking=dt_string,\
+                             id_user=session['userid'], ISBN=isbn,school_id=session['school_id']))
+        mysql.connection.commit()
+        return render_template('book_details.html', details = details, categories = categories, authors = authors)
+

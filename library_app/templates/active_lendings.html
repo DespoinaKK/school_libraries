@@ -1,0 +1,22 @@
+<html>
+    <head>
+        <title>Active Lendings</title>
+    </head>
+    <body>
+        <h1>Active Lendings</h1>
+        {% for i in range(lendings|length): %}
+            <h2>{{ title[i][0] }}</h2>
+            <p><strong>User:</strong> {{borrower_username[i][0]}}</p>
+            <p><strong>Date of Borrowing:</strong> {{lendings[i][1]}}</p>
+            <form method="post">
+                <input type="submit" name = "Return" value="Return (#{{lendings[i][0]}})">
+            </form>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+  {% endfor %}
+  {% for mesg in get_flashed_messages() %}
+            <p>{{ mesg }}</p>
+            {% endfor %}
+    </body>
+</html>

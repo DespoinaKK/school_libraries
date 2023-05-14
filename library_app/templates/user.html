@@ -1,10 +1,9 @@
+{% extends 'base.html' %}
 <html>
-    <head>
-        <title>Home</title>
-    </head>
-    <body>
-        <h1>Welcome {{ name }}</h1>
-
+    {%block title %}Home{% endblock %}
+    
+        {% block header %}<h1>Welcome {{ name }}</h1>{% endblock %}
+        {% block content %}
         <form method="post">
             <input type="submit" name = "show books" value="Show my lending history">
 
@@ -29,7 +28,7 @@
             {% for mesg in get_flashed_messages() %}
             <p>{{ mesg }}</p>
             {% endfor %}
-    </body>
+    {% endblock %}
     
 </html>
 

@@ -1,9 +1,8 @@
 <!doctype html>
-<title>{% block title %}{% endblock %} - Flaskr</title>
+<title>{% block title %}{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <nav>
-  <h1>Καλωσορίσατε!</h1>
-  <ul>
+   <ul>
     {% if session['loggedin'] %}
       <li><span>{{ session['username'] }}</span>
       <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
