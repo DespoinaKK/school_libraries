@@ -202,20 +202,23 @@ def manager_home():
 @bp.route('/manager/pending_lendings', methods=('GET', 'POST'))
 def pending_lendings():
     cur = mysql.connection.cursor()
-    cur.execute('''SELECT * FROM booking ORDER BY date_of_booking;''')
-    bookings = list(cur.fetchall())
     school_id = session['school_id']
     title = []
     booker_username = []
     copies = []
     active_lendings = []
+    booker_role = []
+    cur.execute('''SELECT * FROM booking WHERE school_id=%s ORDER BY date_of_booking ASC;''', [school_id])
+    bookings = list(cur.fetchall())
     for booking in bookings:
         isbn = booking[3]
         booker_id = booking[2]
         cur.execute('''SELECT title FROM books WHERE ISBN=%s''', [isbn])
         title.append(cur.fetchone())
-        cur.execute('''SELECT username FROM users WHERE id_user=%s''', [booker_id])
-        booker_username.append(cur.fetchone())
+        cur.execute('''SELECT username, role FROM users WHERE id_user=%s''', [booker_id])
+        a = cur.fetchone()
+        booker_username.append(a[0])
+        booker_role.append(a[1])
         cur.execute(''' SELECT copies_available FROM book_school WHERE isbn = %s AND school_id = %s''', [isbn, school_id])
         copies.append(cur.fetchone())
         cur.execute('''SELECT count(*) FROM lending WHERE id_user = %s AND return_date is NULL''', [booker_id])
@@ -223,7 +226,7 @@ def pending_lendings():
     cur.close()
     if request.method == 'GET':
         return render_template('pending_lendings.html', copies = copies, bookings = bookings, booker_username = booker_username,
-            title = title, active_lendings = active_lendings)
+            title = title, active_lendings = active_lendings, booker_role = booker_role)
     if request.method == 'POST':
         if request.form.get('Lend'):
             booking_id =  request.form.get('Lend')[7:]
@@ -243,9 +246,9 @@ def pending_lendings():
 @bp.route('/manager/active_lendings', methods=('GET', 'POST'))
 def active_lendings():
     cur = mysql.connection.cursor()
-    cur.execute('''SELECT * FROM lending WHERE return_date is NULL ORDER BY borrow_date DESC;''')
-    lendings = list(cur.fetchall())
     school_id = session['school_id']
+    cur.execute('''SELECT * FROM lending WHERE school_id=%s AND return_date is NULL ORDER BY borrow_date ASC;''', [school_id])
+    lendings = list(cur.fetchall())
     title = []
     borrower_username = []
     for lending in lendings:

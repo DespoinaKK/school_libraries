@@ -6,15 +6,15 @@
         <h1>Pending Lendings</h1>
         {% for i in range(bookings|length): %}
             <h2>{{ title[i][0] }}</h2>
-            <p><strong>User:</strong> {{booker_username[i][0]}}</p>
+            <p><strong>User:</strong> {{booker_username[i]}}</p>
             <p>Active Lendings: {{active_lendings[i][0]}}</p>
             <p><strong>Date of Booking:</strong> {{bookings[i][1]}}</p>
             <p><strong>Copies Available:</strong> {{copies[i][0]}}</p>
-            {% if active_lendings[i][0] < 2 and copies[i][0] > 0: %}
+            {% if (active_lendings[i][0] < 2 - booker_role[i]) and (copies[i][0] > 0) | safe %}
             <form method="post">
                 <input type="submit" name = "Lend" value="Lend (#{{bookings[i][0]}})">
             </form>
-            {% endif %}
+            {%endif%}
         {% if not loop.last %}
             <hr>
         {% endif %}
