@@ -1,0 +1,21 @@
+
+<html>
+    <head>
+        <title>Delayed Books</title>
+    </head>
+    <body>
+        <h1>Delayed Books, user #{{user_id}}</h1>
+
+        {% for i in range(isbn|length): %}
+            <h2>{{ title[i] }}</h2>
+            <p>ISBN: {{ isbn[i] }}</p>
+            <p>Borrowed: {{ borrow_date[i] }}</p>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+  {% endfor %}
+
+    </body>
+</html>
+
+

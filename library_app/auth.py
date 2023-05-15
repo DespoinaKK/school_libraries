@@ -1,7 +1,7 @@
 from flask import Flask,render_template, request,redirect,Blueprint,flash,session, url_for, g
 from flask_mysqldb import MySQL
 import functools 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 app = Flask(__name__)
  
@@ -196,6 +196,8 @@ def manager_home():
             return redirect('/manager/pending_lendings')
         if request.form.get('Active Lendings'):
             return redirect('/manager/active_lendings')
+        if request.form.get('Active Users'):
+            return redirect('/manager/active_users')
     if request.method == 'GET':
         return render_template('manager_home.html')
 
@@ -274,6 +276,68 @@ def active_lendings():
             cur.close()
             return redirect('/manager/active_lendings')
 
+@bp.route('/manager/active_users', methods=('GET', 'POST'))
+def active_users():
+    cur = mysql.connection.cursor()
+    school_id = session['school_id']
+    cur.execute('''SELECT * FROM users WHERE school_id=%s ORDER BY id_user;''', [school_id])
+    users = list(cur.fetchall())
+    name = []
+    username = []
+    role = []
+    birthday = []
+    user_id = []
+    for user in users:
+        user_id.append(user[0])
+        name.append(user[1])
+        role.append(user[5])
+        username.append(user[2])
+        birthday.append(user[6])
+    cur.close()
+    if request.method == 'POST':
+        if request.form.get('Edit User'):
+            a = request.form.get('Edit User')[12:]
+            user_id = a[:-1]
+            return redirect(url_for('.edit_user', user_id=user_id))
+        if request.form.get('Show Delayed Returns'):
+            a = request.form.get('Show Delayed Returns')[23:]
+            user_id = a[:-1]
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT b.title, b.ISBN, l.borrow_date FROM lending l INNER JOIN books b on l.ISBN = b.ISBN WHERE l.id_user=%s AND l.return_date is NULL AND l.borrow_date < %s''', [user_id, datetime.now().date()-timedelta(days=7)])            
+            title = []
+            borrow_date = []
+            isbn = []
+            results = list(cur.fetchall())
+            for result in results:
+                title.append(result[0])
+                borrow_date.append(result[2])
+                isbn.append(result[1])
+            return render_template('delayed_books.html', title=title, borrow_date=borrow_date, isbn=isbn, user_id = user_id)
+    if request.method == 'GET':
+        return render_template('active_users.html', name=name, username=username, role=role,birthday=birthday, user_id=user_id)
+
+@bp.route('/manager/active_users/edit_user/<user_id>', methods=('GET', 'POST'))
+def edit_user(user_id):
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users WHERE id_user=%s;''', [user_id])
+    user = cur.fetchone()
+    name = user[1]
+    role = user[5]
+    birthday = user[6]
+    username = user[2]
+    cur.close()
+    if request.method == 'POST':
+        school_id = request.form.get('schools')
+        name = request.form['name']
+        birthday = request.form['birthday']
+        role = request.form.get('role')
+        cur = mysql.connection.cursor()
+        cur.execute('''UPDATE users SET name = %s, birthday = %s, role = %s WHERE id_user = %s;''', [name, birthday, role, user_id])
+        mysql.connection.commit()
+        return render_template('edit_user.html', name=name, role=role, username=username, birthday=birthday)
+    if request.method == 'GET':
+       return render_template('edit_user.html', name=name, role=role, username=username, birthday=birthday)
+    
 
 @bp.route('/details/<isbn>', methods=('GET', 'POST'))
 def details(isbn):

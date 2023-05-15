@@ -1,0 +1,33 @@
+
+<html>
+    <head>
+        <title>Edit User</title>
+    </head>
+    <body>
+<form method="post">
+    <label for="username">Username:</label>
+    <input name="username" id="username" value="{{username}}" readonly>
+    <br>
+    <label for="name">Full Name:</label>
+    <input name="name" id="name" value="{{name}}" required>
+    <br>
+    <label for="birthday">Birthday:</label>
+    <input type="date" id="birthday" name="birthday" value="{{birthday}}"required>
+    <br>
+    <label for="role">Role:</label>
+    <select name="role" id="role">
+        <body>
+        <option value="0" name ="student">student</option>
+        <option value="1" name ="teacher">teacher</option>
+        </body>
+    </select>
+   
+    </body>
+    </select>
+    {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+    {% endfor %}
+    <input type="submit" value="Save">
+  </form>
+</body>
+  </html>

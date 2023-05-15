@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <title>Active Users</title>
+    </head>
+    <body>
+        <h1>Active Users</h1>
+        {% for i in range(name|length): %}
+            <h2>{{ name[i] }}</h2>
+            <p><strong>User Id:</strong> #{{user_id[i]}}</p>
+            <p><strong>User:</strong> {{username[i]}}</p>
+            <p><strong>Birthday:</strong> {{birthday[i]}}</p>
+            {% if role[i][0] == 0 %}
+            <p><strong>Student</strong></p>
+            {%endif%}
+            {% if role[i][0] == 1 %}
+            <p><strong>Teacher</strong></p>
+            {%endif%}
+            <form method="post">
+                <input type="submit" name = "Edit User" value="Edit User (#{{user_id[i]}})">
+                <input type="submit" name = "Show Lending History" value="Show Lending History (#{{user_id[i]}})">
+                <input type="submit" name = "Show Active Bookings" value="Show Active Bookings (#{{user_id[i]}})">
+                <input type="submit" name = "Show Delayed Returns" value="Show Delayed Returns (#{{user_id[i]}})">
+                <input type="submit" name = "Show User Reviews" value="Show User Reviews (#{{user_id[i]}})">
+                <input type="submit" name = "Deactivate User" value="Deactivate User (#{{user_id[i]}})">
+            </form>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+  {% endfor %}
+    </body>
+</html>
