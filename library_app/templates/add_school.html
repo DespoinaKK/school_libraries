@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <title>Add School</title>
+    </head>
+    <h1>Add School Information</h1>
+    <form method="post">
+        <label for="name">Name:</label>
+        <input name="name" id="name" required>
+        <br>
+        <br>
+        <label for="director">Director:</label>
+        <input name="director" id="director" required>
+        <br>
+        <br>
+        <label for="address">Address:</label>
+        <input name="address" id="address" required>
+        <br>
+        <br>
+        <label for="city">City:</label>
+        <input id="city" name="city" required>
+        <br>
+        <br>
+        <label for="post_code">Post code:</label>
+        <input id="post_code" name="post_code" required>
+        <br>
+        <br>
+        <label for="telephone_number">Telephone Number:</label>
+        <input id="telephone_number" name="telephone_number" required>
+        <br>
+        <br>
+        <label for="email">Email:</label>
+        <input id="email" name="email" required>
+        <br>
+        {% for message in get_flashed_messages() %}
+        <div class="flash">{{ message }}</div>
+        {% endfor %}
+        <br>
+        <input type="submit" value="Add School">
+    </form>
+</html>

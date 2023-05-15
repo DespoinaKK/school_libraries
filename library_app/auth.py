@@ -90,6 +90,8 @@ def login():
             role = user[5]
             if role == 2:
                 return redirect('/manager')
+            if role == 3:
+                return redirect('/admin')
             return redirect('/user')
 
         else:
@@ -188,6 +190,36 @@ def show_books():
       
     if request.method == 'GET':
         return render_template('user.html', categories=categories, name = name)
+    
+@bp.route('/admin', methods=('GET', 'POST'))
+def admin_home():
+    if request.method == 'POST':
+        if request.form.get('Add School'):
+            return redirect('/admin/add_school')
+
+    if request.method == 'GET':
+        return render_template('admin_home.html')
+    
+@bp.route('/admin/add_school', methods=('GET', 'POST'))
+def add_school():
+    if request.method == 'GET':
+        return render_template('add_school.html')
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        director = request.form['director']
+        address = request.form['address']
+        city = request.form['city']
+        post_code = request.form['post_code']
+        telephone_number = request.form['telephone_number']
+        email = request.form['email']
+        cur_insert = mysql.connection.cursor()
+        cur_insert.execute('''INSERT INTO schools (name, director, address, city, post_code, telephone_number, email) \
+            VALUES ('{name}', '{director}', '{address}', '{city}', {post_code}, {telephone_number}, '{email}');'''.format(name=name,\
+                     director=director, address=address, city=city, post_code=post_code, telephone_number=telephone_number, email=email))
+        mysql.connection.commit()
+        flash('School added successfully!')
+        return render_template('add_school.html')
     
 @bp.route('/manager', methods=('GET', 'POST'))
 def manager_home():
