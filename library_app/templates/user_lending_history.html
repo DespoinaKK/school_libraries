@@ -1,0 +1,27 @@
+
+<html>
+    <head>
+        <title>User Lending History</title>
+    </head>
+    <body>
+        <h1>User #{{user_id}} Lending History</h1>
+        {% block content %}
+
+        {% for book in books: %}
+            <h2>{{ book[6] }}</h2>
+            <p>ISBN: {{ book[4] }}</p>
+            <p>Borrowed: {{ book[1] }}</p>
+            {% if book[2]: %}
+            <p>Returned: {{ book[2] }}</p>
+            {% endif %}
+            {% if not book[2]: %}
+            <p>Not returned</p>
+            {%endif%}
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+  {% endfor %}
+{% endblock %}
+
+    </body>
+</html>
