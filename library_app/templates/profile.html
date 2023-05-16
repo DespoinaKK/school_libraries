@@ -1,0 +1,55 @@
+
+<html>
+    <head>
+        <title>My profile</title>
+    </head>
+    <h1> My Profile</h1>
+    <body>
+<form method="post">
+    {% if profile[5] == 0:%}
+    <h4>You can modify your username and password.
+        For any further change or questions, ask your school's library manager.</h4>
+    <br>
+    <label for="username">Username:</label>
+    <input name="username" id="username" value="{{profile[2]}}" required>
+    <br>
+    <label for="password">Password:</label>
+    <input type='password' name="password" id="password" value="{{profile[3]}}" required>
+    <br>
+    <label for="name">Full Name:</label>
+    <input name="name" id="name" value="{{profile[1]}}" readonly>
+    <br>
+    <label for="birthday">Birthday:</label>
+    <input type="date" id="birthday" name="birthday" value="{{profile[6]}}"readonly>
+    <br>
+    <label for="role">Role: Student</label>
+    {% endif %}
+    {% if profile[5] == 1:%}
+    <h4>You can change your username, password, name and birthday. 
+        For any further change or questions, ask your school's library manager.</h4>
+    <br>
+    <label for="username">Username:</label>
+    <input name="username" id="username" value="{{profile[2]}}" required>
+    <br>
+    <label for="password">Password:</label>
+    <input type='password' name="password" id="password" value="{{profile[3]}}" required>
+    <br>
+    <label for="name">Full Name:</label>
+    <input name="name" id="name" value="{{profile[1]}}" required>
+    <br>
+    <label for="birthday">Birthday:</label>
+    <input type="date" id="birthday" name="birthday" value="{{profile[6]}}"required>
+    <br>
+    <label for="role">Role: Teacher</label>
+    {% endif %}
+   
+    </body>
+    </select>
+    {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+    {% endfor %}
+    <br>
+    <input type="submit" name="save changes" value="Save Changes">
+  </form>
+</body>
+  </html>

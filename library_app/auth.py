@@ -116,7 +116,8 @@ def show_books():
             book = cur.fetchall()
             cur.close()
             return render_template('my_books.html', books=book)
-
+        if request.form.get('show profile'):
+            return redirect('user/profile')
         if request.form.get('search'):
            options = request.form.getlist('options[]')
            cat = False
@@ -190,7 +191,64 @@ def show_books():
       
     if request.method == 'GET':
         return render_template('user.html', categories=categories, name = name)
-    
+
+@bp.route('/user/profile', methods=('GET', 'POST'))
+def profile():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users WHERE id_user = %s''', [session['userid']])
+    profile = cur.fetchone()
+    cur.close()
+    if request.method == 'POST':
+        if request.form.get('save changes'):
+            if profile[5] == 0:
+                flash("student")
+                #student
+                new_username = request.form['username']
+                new_password = request.form['password']
+                invalid_char = False
+                if len(new_username) > 15 or len(new_password) > 15:
+                    invalid_char = True
+                    flash('Up to 15 characters can be used for username and password')
+                special_characters = '''"'!@#$%^&*()-+?=,<>/'''
+                if not new_username.islower() or any(c in special_characters for c in new_username) :
+                    invalid_char = True
+                    flash('Username must contain only lowercase latin letters or _')
+                if invalid_char:
+                    return render_template('profile.html', profile = profile)
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE users SET username = %s, password = %s WHERE id_user = %s''', [new_username, new_password, session['userid']])
+                flash('Your profile has been modified successfully.')
+                mysql.connection.commit()
+                cur.close()
+                return redirect('/user')
+            elif profile[5] == 1:
+                #teacher
+                new_username = request.form['username']
+                new_password = request.form['password']
+                new_name = request.form['name']
+                new_birthday = request.form['birthday']
+                invalid_char = False
+                if len(new_username) > 15 or len(new_password) > 15:
+                    invalid_char = True
+                    flash('Up to 15 characters can be used for username and password')
+                special_characters = '''"'!@#$%^&*()-+?=,<>/'''
+                if not new_username.islower() or any(c in special_characters for c in new_username) :
+                    invalid_char = True
+                    flash('Username must contain only lowercase latin letters or _')
+                if not (new_name.isalpha() or ' ' in new_name):
+                    invalid_char = True
+                    flash('Only latin characters can be used for name')
+                if invalid_char:
+                    return render_template('profile.html', profile = profile)
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE users SET username = %s, password = %s, name = %s, birthday = %s WHERE id_user = %s''',\
+                             [new_username, new_password, new_name, new_birthday, session['userid']])
+                mysql.connection.commit()
+                flash('Your profile has been modified successfully.')
+                cur.close()
+                return redirect('/user')
+    if request.method == 'GET':
+        return render_template('profile.html', profile = profile)
 @bp.route('/admin', methods=('GET', 'POST'))
 def admin_home():
     if request.method == 'POST':
