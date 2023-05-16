@@ -8,14 +8,17 @@
         {% block content %}
 
         {% for book in books: %}
-            <h2>{{ book[6] }}</h2>
-            <p>ISBN: {{ book[4] }}</p>
-            <p>Borrowed: {{ book[1] }}</p>
-            {% if book[2]: %}
-            <p>Returned: {{ book[2] }}</p>
+            <h2>{{ book[0] }}</h2>
+            <p>ISBN: {{ book[1] }}</p>
+            <p>Borrowed: {{ book[2] }}</p>
+            {% if book[3]: %}
+            <p>Returned: {{ book[3] }}</p>
             {% endif %}
-            {% if not book[2]: %}
+            {% if not book[3]: %}
             <p>Not returned</p>
+            <form method="post">
+                <input type="submit" name = "Return" value="Return (#{{book[4]}})">
+            </form>
             {%endif%}
         {% if not loop.last %}
             <hr>

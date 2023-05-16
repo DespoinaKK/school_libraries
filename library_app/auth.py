@@ -407,10 +407,11 @@ def active_users():
             a = request.form.get('Show Lending History')[23:]
             user_id = a[:-1]       
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT * FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s \
+            cur.execute('''SELECT b.title, b.ISBN, l.borrow_date, l.return_date, l.lending_id \
+                  FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s \
                 ORDER BY borrow_date DESC;''', [user_id])
             book = cur.fetchall()
-            cur.close()
+            cur.close()            
             return render_template('user_lending_history.html', books=book, user_id = user_id)     
         if request.form.get('Show Active Bookings'):
             a = request.form.get('Show Active Bookings')[23:]
@@ -436,6 +437,7 @@ def active_users():
                                    booker_role = booker_role, copies = copies, bookings = bookings)     
         if request.form.get('Lend'):
             booking_id =  request.form.get('Lend')[7:]
+            booking_id = booking_id[:-1]
             cur = mysql.connection.cursor()
             cur.execute('''SELECT * FROM booking WHERE booking_id = %s''', [booking_id])
             books_to_lend = cur.fetchone()
@@ -445,6 +447,15 @@ def active_users():
                              id_user=books_to_lend[2], ISBN=books_to_lend[3],school_id=books_to_lend[4]))
             cur.execute('''DELETE FROM booking WHERE booking_id = %s''', [booking_id])
             mysql.connection.commit()
+            cur.close()
+            return redirect('/manager/active_users')
+        if request.form.get('Return'):
+            lending_id = request.form.get('Return')[9:]
+            lending_id = lending_id[:-1]
+            cur = mysql.connection.cursor()
+            cur.execute('''UPDATE lending SET return_date = '{date}' WHERE lending_id = {id};'''.format(date=date.today(),id=lending_id))
+            mysql.connection.commit()
+            flash("Book successfully returned!")
             cur.close()
             return redirect('/manager/active_users')
 
