@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <title>Pending Registrations</title>
+    </head>
+    <body>
+        <h1>Pending Registrations</h1>
+        {% for app in applications: %}
+            <h2>User's Information (Application #{{app[0]}})</h2>
+            <p><strong>Name:        </strong> {{app[1]}}</p>
+            <p><strong>Username:    </strong> {{app[2]}}</p>
+            <p><strong>Birthday     :</strong> {{app[6]}}</p>
+            {% if app[5] == 0 %}
+            <p><strong>Role     : Student</strong></p>
+            {%endif%}
+            {% if app[5] == 1 %}
+            <p><strong>Role     : Teacher</strong></p>
+            {%endif%}
+            <br>
+            <form method="post">
+                <input type="submit" name = "Reject" value="Reject #{{app[0]}}">
+                <br>
+                <input type="submit" name = "Accept" value="Accept #{{app[0]}}">
+            </form>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+  {% endfor %}
+    </body>
+</html>

@@ -3,6 +3,8 @@ from flask_mysqldb import MySQL
 import functools 
 from datetime import datetime, date, timedelta
 
+from .make_image import make_image
+
 app = Flask(__name__)
  
 app.config['MYSQL_HOST'] = '127.0.0.1'
@@ -288,8 +290,54 @@ def manager_home():
             return redirect('/manager/active_lendings')
         if request.form.get('Active Users'):
             return redirect('/manager/active_users')
+        if request.form.get('Pending Registrations'):
+            return redirect('/manager/pending_registrations')
     if request.method == 'GET':
         return render_template('manager_home.html')
+
+@bp.route('/manager/pending_registrations', methods=('GET', 'POST'))
+def pending_registrations():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users_unregistered WHERE school_id = %s''', [session['school_id']])
+    applications = list(cur.fetchall())
+    cur.close()
+    if request.method == 'GET':
+        return render_template('pending_registrations.html', applications = applications)
+    if request.method == 'POST':
+        if request.form.get('Reject'):
+            cur = mysql.connection.cursor()
+            id = request.form.get('Reject')[8:]
+            cur.execute('''DELETE FROM users_unregistered WHERE id_user = %s''', [id])
+            mysql.connection.commit()
+            cur.close()
+            return redirect('/manager/pending_registrations')
+        if request.form.get('Accept'):
+            id = request.form.get('Accept')[8:]
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT * FROM users_unregistered WHERE id_user = %s''', [id])
+            user_data = cur.fetchone()
+            name = user_data[1]
+            username=  user_data[2]
+            password = user_data[3]
+            school_id = user_data[4]
+            role = user_data[5]
+            birthday = user_data[6] 
+            cur.execute('''SELECT name FROM schools WHERE school_id = %s''', [school_id])
+            school_name = cur.fetchone()[0]
+            cur.execute('''INSERT INTO users(name, username, password, school_id, role, birthday) \
+                    VALUES ('{name}', '{username}', '{password}', {school_id}, {role}, '{birthday}');'''.format(name=name,\
+                             username=username, password=password,school_id=school_id, role=role, birthday=birthday))
+            mysql.connection.commit()
+            cur.execute('''DELETE FROM users_unregistered WHERE id_user = %s''', [id])
+            mysql.connection.commit()
+            cur.close()
+            image = make_image(name, id, birthday, role, school_name, "pass_{id}".format(id=id))
+            return render_template("pass_card.html", img_data=image)
+            # return redirect('/manager/pending_registrations')
+    school_id = session['school_id']
+    cur.execute('''SELECT name FROM schools WHERE school_id = %s'''[school_id])
+    school_name = cur.fetchone()
+
 
 @bp.route('/manager/pending_lendings', methods=('GET', 'POST'))
 def pending_lendings():
