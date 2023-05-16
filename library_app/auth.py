@@ -331,14 +331,24 @@ def pending_registrations():
             cur.execute('''DELETE FROM users_unregistered WHERE id_user = %s''', [id])
             mysql.connection.commit()
             cur.close()
-            image = make_image(name, id, birthday, role, school_name, "pass_{id}".format(id=id))
-            return render_template("pass_card.html", img_data=image)
-            # return redirect('/manager/pending_registrations')
-    school_id = session['school_id']
-    cur.execute('''SELECT name FROM schools WHERE school_id = %s'''[school_id])
-    school_name = cur.fetchone()
+            return redirect(url_for('.passcard',id=id))
+            
 
-
+@bp.route('/manager/pending_registrations/new_user_passcard<id>')
+def passcard(id):
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users WHERE id_user = %s''', [id])
+    user_data = cur.fetchone()
+    name = user_data[1]
+    username=  user_data[2]
+    password = user_data[3]
+    school_id = user_data[4]
+    role = user_data[5]
+    birthday = user_data[6] 
+    cur.execute('''SELECT name FROM schools WHERE school_id = %s''', [school_id])
+    school_name = cur.fetchone()[0]
+    image = make_image(name, username, birthday, role, school_name, "pass_{id}".format(id=id))
+    return render_template("pass_card.html", img_data=image)
 @bp.route('/manager/pending_lendings', methods=('GET', 'POST'))
 def pending_lendings():
     cur = mysql.connection.cursor()
