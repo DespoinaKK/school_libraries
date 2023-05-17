@@ -3,6 +3,8 @@ from flask_mysqldb import MySQL
 import functools 
 from datetime import datetime, date, timedelta
 
+from .make_image import make_image
+
 app = Flask(__name__)
  
 app.config['MYSQL_HOST'] = '127.0.0.1'
@@ -116,7 +118,8 @@ def show_books():
             book = cur.fetchall()
             cur.close()
             return render_template('my_books.html', books=book)
-
+        if request.form.get('show profile'):
+            return redirect('user/profile')
         if request.form.get('search'):
            options = request.form.getlist('options[]')
            cat = False
@@ -190,7 +193,64 @@ def show_books():
       
     if request.method == 'GET':
         return render_template('user.html', categories=categories, name = name)
-    
+
+@bp.route('/user/profile', methods=('GET', 'POST'))
+def profile():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users WHERE id_user = %s''', [session['userid']])
+    profile = cur.fetchone()
+    cur.close()
+    if request.method == 'POST':
+        if request.form.get('save changes'):
+            if profile[5] == 0:
+                flash("student")
+                #student
+                new_username = request.form['username']
+                new_password = request.form['password']
+                invalid_char = False
+                if len(new_username) > 15 or len(new_password) > 15:
+                    invalid_char = True
+                    flash('Up to 15 characters can be used for username and password')
+                special_characters = '''"'!@#$%^&*()-+?=,<>/'''
+                if not new_username.islower() or any(c in special_characters for c in new_username) :
+                    invalid_char = True
+                    flash('Username must contain only lowercase latin letters or _')
+                if invalid_char:
+                    return render_template('profile.html', profile = profile)
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE users SET username = %s, password = %s WHERE id_user = %s''', [new_username, new_password, session['userid']])
+                flash('Your profile has been modified successfully.')
+                mysql.connection.commit()
+                cur.close()
+                return redirect('/user')
+            elif profile[5] == 1:
+                #teacher
+                new_username = request.form['username']
+                new_password = request.form['password']
+                new_name = request.form['name']
+                new_birthday = request.form['birthday']
+                invalid_char = False
+                if len(new_username) > 15 or len(new_password) > 15:
+                    invalid_char = True
+                    flash('Up to 15 characters can be used for username and password')
+                special_characters = '''"'!@#$%^&*()-+?=,<>/'''
+                if not new_username.islower() or any(c in special_characters for c in new_username) :
+                    invalid_char = True
+                    flash('Username must contain only lowercase latin letters or _')
+                if not (new_name.isalpha() or ' ' in new_name):
+                    invalid_char = True
+                    flash('Only latin characters can be used for name')
+                if invalid_char:
+                    return render_template('profile.html', profile = profile)
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE users SET username = %s, password = %s, name = %s, birthday = %s WHERE id_user = %s''',\
+                             [new_username, new_password, new_name, new_birthday, session['userid']])
+                mysql.connection.commit()
+                flash('Your profile has been modified successfully.')
+                cur.close()
+                return redirect('/user')
+    if request.method == 'GET':
+        return render_template('profile.html', profile = profile)
 @bp.route('/admin', methods=('GET', 'POST'))
 def admin_home():
     if request.method == 'POST':
@@ -230,9 +290,67 @@ def manager_home():
             return redirect('/manager/active_lendings')
         if request.form.get('Active Users'):
             return redirect('/manager/active_users')
+        if request.form.get('Pending Registrations'):
+            return redirect('/manager/pending_registrations')
     if request.method == 'GET':
         return render_template('manager_home.html')
 
+@bp.route('/manager/pending_registrations', methods=('GET', 'POST'))
+def pending_registrations():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users_unregistered WHERE school_id = %s''', [session['school_id']])
+    applications = list(cur.fetchall())
+    cur.close()
+    if request.method == 'GET':
+        return render_template('pending_registrations.html', applications = applications)
+    if request.method == 'POST':
+        if request.form.get('Reject'):
+            cur = mysql.connection.cursor()
+            id = request.form.get('Reject')[8:]
+            cur.execute('''DELETE FROM users_unregistered WHERE id_user = %s''', [id])
+            mysql.connection.commit()
+            cur.close()
+            return redirect('/manager/pending_registrations')
+        if request.form.get('Accept'):
+            id = request.form.get('Accept')[8:]
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT * FROM users_unregistered WHERE id_user = %s''', [id])
+            user_data = cur.fetchone()
+            name = user_data[1]
+            username=  user_data[2]
+            password = user_data[3]
+            school_id = user_data[4]
+            role = user_data[5]
+            birthday = user_data[6] 
+            cur.execute('''SELECT name FROM schools WHERE school_id = %s''', [school_id])
+            school_name = cur.fetchone()[0]
+            cur.execute('''INSERT INTO users(name, username, password, school_id, role, birthday) \
+                    VALUES ('{name}', '{username}', '{password}', {school_id}, {role}, '{birthday}');'''.format(name=name,\
+                             username=username, password=password,school_id=school_id, role=role, birthday=birthday))
+            cur.execute('''SELECT id_user FROM users WHERE username=%s''', [username])
+            new_id = cur.fetchone()[0]
+            mysql.connection.commit()
+            cur.execute('''DELETE FROM users_unregistered WHERE id_user = %s''', [id])
+            mysql.connection.commit()
+            cur.close()
+            return redirect(url_for('.passcard',id=new_id))
+            
+
+@bp.route('/manager/pending_registrations/new_user_passcard<id>')
+def passcard(id):
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users WHERE id_user = %s''', [id])
+    user_data = cur.fetchone()
+    name = user_data[1]
+    username=  user_data[2]
+    password = user_data[3]
+    school_id = user_data[4]
+    role = user_data[5] 
+    birthday = user_data[6] 
+    cur.execute('''SELECT name FROM schools WHERE school_id = %s''', [school_id])
+    school_name = cur.fetchone()[0]
+    image = make_image(name, username, birthday, role, school_name, "pass_{id}".format(id=id))
+    return render_template("pass_card.html", img_data=image)
 @bp.route('/manager/pending_lendings', methods=('GET', 'POST'))
 def pending_lendings():
     cur = mysql.connection.cursor()
@@ -349,10 +467,11 @@ def active_users():
             a = request.form.get('Show Lending History')[23:]
             user_id = a[:-1]       
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT * FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s \
+            cur.execute('''SELECT b.title, b.ISBN, l.borrow_date, l.return_date, l.lending_id \
+                  FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s \
                 ORDER BY borrow_date DESC;''', [user_id])
             book = cur.fetchall()
-            cur.close()
+            cur.close()            
             return render_template('user_lending_history.html', books=book, user_id = user_id)     
         if request.form.get('Show Active Bookings'):
             a = request.form.get('Show Active Bookings')[23:]
@@ -378,6 +497,7 @@ def active_users():
                                    booker_role = booker_role, copies = copies, bookings = bookings)     
         if request.form.get('Lend'):
             booking_id =  request.form.get('Lend')[7:]
+            booking_id = booking_id[:-1]
             cur = mysql.connection.cursor()
             cur.execute('''SELECT * FROM booking WHERE booking_id = %s''', [booking_id])
             books_to_lend = cur.fetchone()
@@ -387,6 +507,15 @@ def active_users():
                              id_user=books_to_lend[2], ISBN=books_to_lend[3],school_id=books_to_lend[4]))
             cur.execute('''DELETE FROM booking WHERE booking_id = %s''', [booking_id])
             mysql.connection.commit()
+            cur.close()
+            return redirect('/manager/active_users')
+        if request.form.get('Return'):
+            lending_id = request.form.get('Return')[9:]
+            lending_id = lending_id[:-1]
+            cur = mysql.connection.cursor()
+            cur.execute('''UPDATE lending SET return_date = '{date}' WHERE lending_id = {id};'''.format(date=date.today(),id=lending_id))
+            mysql.connection.commit()
+            flash("Book successfully returned!")
             cur.close()
             return redirect('/manager/active_users')
 
