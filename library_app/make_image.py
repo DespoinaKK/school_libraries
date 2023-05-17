@@ -9,15 +9,15 @@ from flask import send_file
 
 def make_image(n, u, b, r, s, image_name):
     # Open an Image
-    img = Image.open('{path}\\library_app\\static\\background.jpg'.format(path = os.path.dirname(os.path.abspath("author_book.txt"))))
+    img = Image.open('{path}/library_app/static/background.jpg'.format(path = os.path.dirname(os.path.abspath("author_book.txt"))))
  
     # Call draw Method to add 2D graphics in an image
     I1 = ImageDraw.Draw(img)
  
     # Custom font style and font size
-    myFont1 = ImageFont.truetype('NotoSans-Bold.ttf', 50)
-    myFont2 = ImageFont.truetype('NotoSans-Regular.ttf', 40) 
-    myFont3 = ImageFont.truetype('NotoSans-BoldItalic.ttf', 40)
+    myFont1 = ImageFont.truetype('NotoSansMono-Bold.ttf', 50)
+    myFont2 = ImageFont.truetype('NotoSansMono-Regular.ttf', 40) 
+    myFont3 = ImageFont.truetype('NotoSansMono-Regular.ttf', 40)
     
     school = s + "\nLibrary"
     I1.multiline_text((46, 46), school, font=myFont1, fill =(255, 255, 255))
