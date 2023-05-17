@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <title>Add Review</title>
+            <meta charset="UTF-8">
+         <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+
+    <body>
+    <h1>{{title}}</h1>
+    <form method="post">
+        <p><label for="review">Add your review for {{title}}</label></p>
+        <textarea id="review" name="add_review" rows="5" cols="50">Add your review here!</textarea>
+    
+    <div class="rate">
+        <input type="radio" id="star5" name="rate" value="5" />
+        <label for="star5" title="text">5 stars</label>
+        <input type="radio" id="star4" name="rate" value="4" />
+        <label for="star4" title="text">4 stars</label>
+        <input type="radio" id="star3" name="rate" value="3" />
+        <label for="star3" title="text">3 stars</label>
+        <input type="radio" id="star2" name="rate" value="2" />
+        <label for="star2" title="text">2 stars</label>
+        <input type="radio" id="star1" name="rate" value="1" />
+        <label for="star1" title="text">1 star</label>
+      </div>
+      <br>
+        <input type="Submit" name='submit review' value="Submit">
+    </form>
+      {% for mesg in get_flashed_messages() %}
+      <p>{{ mesg }}</p>
+      {% endfor %}
+    </body>
+</html>

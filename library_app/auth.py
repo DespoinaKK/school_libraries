@@ -16,6 +16,27 @@ mysql = MySQL(app)
 
 bp = Blueprint('auth',__name__, url_prefix='/')
 
+def delete_expired_bookings():
+    cur = mysql.connection.cursor()
+    cur.execute('''DELETE FROM booking WHERE date_of_booking < %s''', [datetime.now()-timedelta(days=7)])            
+
+
+def role_required(required_role):
+    def decorator(route_function):
+        @functools.wraps(route_function)
+        def decorated_route(*args, **kwargs):
+            if 'userid' not in session:
+                return redirect('/login')  # Redirect to login page if user is not logged in
+            elif session['role'] not in required_role:
+                return redirect('/unauthorized')  # Redirect to unauthorized page
+            return route_function(*args, **kwargs)
+        return decorated_route
+    return decorator
+
+@bp.route('/unauthorized')
+def unauthorized():
+    return 'Unauthorized page'
+
 @bp.route('/', methods=('GET', 'POST'))
 def home():
     return render_template('base.html', session = session)
@@ -89,6 +110,7 @@ def login():
             session['name'] = user[1]
             session['username'] = username
             session['school_id'] = user[4]
+            session['role'] = user[5]
             role = user[5]
             if role == 2:
                 return redirect('/manager')
@@ -103,6 +125,7 @@ def login():
 
 
 @bp.route('/user', methods=('GET', 'POST'))
+@role_required([0, 1])
 def show_books():
     pid = session['userid']
     cursor = mysql.connection.cursor()
@@ -195,6 +218,7 @@ def show_books():
         return render_template('user.html', categories=categories, name = name)
 
 @bp.route('/user/profile', methods=('GET', 'POST'))
+@role_required([0, 1])
 def profile():
     cur = mysql.connection.cursor()
     cur.execute('''SELECT * FROM users WHERE id_user = %s''', [session['userid']])
@@ -251,7 +275,9 @@ def profile():
                 return redirect('/user')
     if request.method == 'GET':
         return render_template('profile.html', profile = profile)
+
 @bp.route('/admin', methods=('GET', 'POST'))
+@role_required([3])
 def admin_home():
     if request.method == 'POST':
         if request.form.get('Add School'):
@@ -261,6 +287,7 @@ def admin_home():
         return render_template('admin_home.html')
     
 @bp.route('/admin/add_school', methods=('GET', 'POST'))
+@role_required([3])
 def add_school():
     if request.method == 'GET':
         return render_template('add_school.html')
@@ -282,9 +309,11 @@ def add_school():
         return render_template('add_school.html')
     
 @bp.route('/manager', methods=('GET', 'POST'))
+@role_required([2])
 def manager_home():
     if request.method == 'POST':
         if request.form.get('Pending Lendings'):
+            delete_expired_bookings()
             return redirect('/manager/pending_lendings')
         if request.form.get('Active Lendings'):
             return redirect('/manager/active_lendings')
@@ -296,6 +325,7 @@ def manager_home():
         return render_template('manager_home.html')
 
 @bp.route('/manager/pending_registrations', methods=('GET', 'POST'))
+@role_required([2])
 def pending_registrations():
     cur = mysql.connection.cursor()
     cur.execute('''SELECT * FROM users_unregistered WHERE school_id = %s''', [session['school_id']])
@@ -337,6 +367,7 @@ def pending_registrations():
             
 
 @bp.route('/manager/pending_registrations/new_user_passcard<id>')
+@role_required([2])
 def passcard(id):
     cur = mysql.connection.cursor()
     cur.execute('''SELECT * FROM users WHERE id_user = %s''', [id])
@@ -351,8 +382,11 @@ def passcard(id):
     school_name = cur.fetchone()[0]
     image = make_image(name, username, birthday, role, school_name, "pass_{id}".format(id=id))
     return render_template("pass_card.html", img_data=image)
+
 @bp.route('/manager/pending_lendings', methods=('GET', 'POST'))
+@role_required([2])
 def pending_lendings():
+    delete_expired_bookings()
     cur = mysql.connection.cursor()
     school_id = session['school_id']
     title = []
@@ -396,6 +430,7 @@ def pending_lendings():
             
 
 @bp.route('/manager/active_lendings', methods=('GET', 'POST'))
+@role_required([2])
 def active_lendings():
     cur = mysql.connection.cursor()
     school_id = session['school_id']
@@ -427,6 +462,7 @@ def active_lendings():
             return redirect('/manager/active_lendings')
 
 @bp.route('/manager/active_users', methods=('GET', 'POST'))
+@role_required([2])
 def active_users():
     cur = mysql.connection.cursor()
     school_id = session['school_id']
@@ -474,6 +510,7 @@ def active_users():
             cur.close()            
             return render_template('user_lending_history.html', books=book, user_id = user_id)     
         if request.form.get('Show Active Bookings'):
+            delete_expired_bookings()
             a = request.form.get('Show Active Bookings')[23:]
             user_id = a[:-1]
             cur = mysql.connection.cursor()
@@ -523,6 +560,7 @@ def active_users():
         return render_template('active_users.html', name=name, username=username, role=role,birthday=birthday, user_id=user_id)
 
 @bp.route('/manager/active_users/edit_user/<user_id>', methods=('GET', 'POST'))
+@role_required([2])
 def edit_user(user_id):
     cur = mysql.connection.cursor()
     cur.execute('''SELECT * FROM users WHERE id_user=%s;''', [user_id])
@@ -547,6 +585,7 @@ def edit_user(user_id):
 
 @bp.route('/details/<isbn>', methods=('GET', 'POST'))
 def details(isbn):
+    delete_expired_bookings()
     cur = mysql.connection.cursor()
     cur.execute('''SELECT * FROM books WHERE ISBN = %s;''',[isbn])
     details = cur.fetchone()
@@ -568,15 +607,31 @@ def details(isbn):
     if request.method == 'GET':
         return render_template('book_details.html', details = details, categories = categories, authors = authors)
     if request.method == 'POST':
-        if not can_book:
-            flash("You have reached your upper limit for the week. Try again later, or return any books you may have borrowed.")
+        if request.form.get('details'):
+            if not can_book:
+                flash("You have reached your upper limit for the week. Try again later, or return any books you may have borrowed.")
+                return render_template('book_details.html', details = details, categories = categories, authors = authors)
+            now = datetime.now()
+            dt_string = now.strftime("%Y/%m/%d %H:%M:%S")
+            cur_insert = mysql.connection.cursor()
+            cur_insert.execute('''INSERT INTO booking (date_of_booking, id_user, ISBN, school_id) \
+                        VALUES ('{date_of_booking}', {id_user}, '{ISBN}', {school_id});'''.format(date_of_booking=dt_string,\
+                                 id_user=session['userid'], ISBN=isbn,school_id=session['school_id']))
+            mysql.connection.commit()
             return render_template('book_details.html', details = details, categories = categories, authors = authors)
-        now = datetime.now()
-        dt_string = now.strftime("%Y/%m/%d %H:%M:%S")
-        cur_insert = mysql.connection.cursor()
-        cur_insert.execute('''INSERT INTO booking (date_of_booking, id_user, ISBN, school_id) \
-                    VALUES ('{date_of_booking}', {id_user}, '{ISBN}', {school_id});'''.format(date_of_booking=dt_string,\
-                             id_user=session['userid'], ISBN=isbn,school_id=session['school_id']))
-        mysql.connection.commit()
-        return render_template('book_details.html', details = details, categories = categories, authors = authors)
-
+        
+        if request.form.get('review'):
+            return render_template('add_review.html', title = details[0])
+        
+        if request.form.get('submit review'):
+            review = request.form['add_review']
+            stars = request.form.get('rate')
+            curs = mysql.connection.cursor()
+            curs.execute('''INSERT INTO reviews (star_review, review_text, ISBN, id_user) \
+                        VALUES ({star_review}, '{review_text}', '{ISBN}', {id_user});'''.format(star_review=int(stars),\
+                                 id_user=session['userid'], ISBN=isbn,review_text=review))
+            mysql.connection.commit()
+            curs.close()
+            flash(stars)
+            return render_template('book_details.html', details = details, categories = categories, authors = authors)
+            
