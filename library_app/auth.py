@@ -327,11 +327,13 @@ def pending_registrations():
             cur.execute('''INSERT INTO users(name, username, password, school_id, role, birthday) \
                     VALUES ('{name}', '{username}', '{password}', {school_id}, {role}, '{birthday}');'''.format(name=name,\
                              username=username, password=password,school_id=school_id, role=role, birthday=birthday))
+            cur.execute('''SELECT id_user FROM users WHERE username=%s''', [username])
+            new_id = cur.fetchone()[0]
             mysql.connection.commit()
             cur.execute('''DELETE FROM users_unregistered WHERE id_user = %s''', [id])
             mysql.connection.commit()
             cur.close()
-            return redirect(url_for('.passcard',id=id))
+            return redirect(url_for('.passcard',id=new_id))
             
 
 @bp.route('/manager/pending_registrations/new_user_passcard<id>')
