@@ -1,0 +1,16 @@
+<html>
+    <head>
+        <title>Reviews</title>
+    </head>
+    <body>
+        <h1>Reviews of User {{username}}</h1>
+        {% for review in reviews: %}
+            <h2>{{ review[0] }}</h2>
+            <p>ISBN: {{ review[1] }}</p>
+            <p><strong>Star Review:</strong> {{review[3]}}/5</p>
+            <p><strong>Review:</strong> {{review[2]}}</p>
+            <hr>
+        {% endfor %}
+        <h3><strong>Average Star Review of {{username}}: {{average}}/5</strong></h3>
+    </body>
+</html>

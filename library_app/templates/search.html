@@ -10,7 +10,7 @@
             <h2>{{ book[1] }}</h2>
             <p>Press for more details</p>
             <form method="post">
-                <input type="submit" name = "details" value="{{ book[0] }}">
+                <input type="submit" name = "{{book[0]}}" value="Details">
             </form>
         {% if not loop.last %}
             <hr>

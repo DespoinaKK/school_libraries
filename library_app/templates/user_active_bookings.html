@@ -4,7 +4,7 @@
         <title>Active Bookings</title>
     </head>
     <body>
-        <h1>User #{{user_id}} Active Bookings</h1>
+        <h1>User {{username}} Active Bookings</h1>
         {% block content %}
 
         {% for i in range(books|length): %}
@@ -13,7 +13,7 @@
             <p>Booked: {{ books[i][2] }}</p>
             {% if (active_lendings < 2 - booker_role) and (copies[i] > 0) | safe %}
             <form method="post">
-                <input type="submit" name = "Lend" value="Lend (#{{bookings[i][0]}})">
+                <input type="submit" name = "{{bookings[i][0]}}" value="Lend">
             </form>
             {%endif%}
         {% if not loop.last %}

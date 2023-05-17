@@ -9,7 +9,7 @@
             <p><strong>User:</strong> {{borrower_username[i][0]}}</p>
             <p><strong>Date of Borrowing:</strong> {{lendings[i][1]}}</p>
             <form method="post">
-                <input type="submit" name = "Return" value="Return (#{{lendings[i][0]}})">
+                <input type="submit" name = "{{lendings[i][0]}}" value="Return">
             </form>
         {% if not loop.last %}
             <hr>

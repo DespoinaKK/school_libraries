@@ -126,3 +126,13 @@ CREATE TABLE booking (
 	PRIMARY KEY (booking_id)
 );
 
+CREATE TABLE pending_reviews (
+	review_id INT AUTO_INCREMENT,
+	star_review INT NOT NULL,
+	review_text VARCHAR(500),
+	ISBN CHAR(13),
+	id_user INT,
+	FOREIGN KEY (ISBN) REFERENCES books (ISBN),
+	FOREIGN KEY (id_user) REFERENCES users (id_user),
+	PRIMARY KEY (review_id)
+);

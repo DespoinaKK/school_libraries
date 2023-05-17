@@ -9,7 +9,7 @@ from flask import send_file
 
 def make_image(n, u, b, r, s, image_name):
     # Open an Image
-    img = Image.open('{path}\\library_app\\static\\background.jpg'.format(path = os.path.dirname(os.path.abspath("author_book.txt"))))
+    img = Image.open('{path}/library_app/static/background.jpg'.format(path = os.path.dirname(os.path.abspath("author_book.txt"))))
  
     # Call draw Method to add 2D graphics in an image
     I1 = ImageDraw.Draw(img)

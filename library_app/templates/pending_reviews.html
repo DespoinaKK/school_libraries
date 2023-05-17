@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <title>Pending Reviews</title>
+    </head>
+    <body>
+        <h1>Pending Reviews</h1>
+        {% for i in range(pending_reviews|length): %}
+            <h2>{{ title[i][0] }}</h2>
+            <p>ISBN: {{ isbn[i] }}</p>
+            <p><strong>User:</strong> {{username[i][0]}}</p>
+            <p><strong>Star Review:</strong> {{pending_reviews[i][1]}}/5</p>
+            <p><strong>Review:</strong> {{pending_reviews[i][2]}}</p>
+            <form method="post">
+                <input type="submit" name = "{{pending_reviews[i][0]}}" value="Approve">
+                <input type="submit" name = "{{pending_reviews[i][0]}}" value="Reject">
+            </form>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+        {% endfor %}
+        {% for mesg in get_flashed_messages() %}
+        <p>{{ mesg }}</p>
+        {% endfor %}
+    </body>
+</html>

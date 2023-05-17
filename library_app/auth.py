@@ -209,9 +209,14 @@ def show_books():
                 flash("No results found")
                 return redirect('/user')
         
-        if request.form.get('details'):
-            isbn = request.form.get('details')
-            return redirect(url_for(".details",isbn=isbn))
+        for key, value in request.form.items():
+            if value == 'Details':
+                isbn = key
+                return redirect(url_for(".details", isbn=isbn))
+        #if request.form.get('details'):
+            #isbn = request.form.get('details')
+            #return redirect(url_for(".details",isbn=isbn))
+        
 
       
     if request.method == 'GET':
@@ -321,8 +326,54 @@ def manager_home():
             return redirect('/manager/active_users')
         if request.form.get('Pending Registrations'):
             return redirect('/manager/pending_registrations')
+        if request.form.get('Pending Reviews'):
+            return redirect('/manager/pending_reviews')
     if request.method == 'GET':
         return render_template('manager_home.html')
+
+@bp.route('/manager/pending_reviews', methods=('GET', 'POST'))
+@role_required([2])
+def pending_reviews():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT pr.review_id, pr.star_review, pr.review_text, pr.ISBN, pr.id_user FROM pending_reviews pr INNER JOIN users u ON pr.id_user = u.id_user \
+                WHERE u.school_id = %s''', [session['school_id']])
+    pending_reviews = list(cur.fetchall())
+    title = []
+    isbn = []
+    username = []
+    for review in pending_reviews:
+        isbn.append(review[3])
+        user_id = review[4]
+        cur.execute('''SELECT title FROM books WHERE ISBN=%s''', [review[3]])
+        title.append(cur.fetchone())
+        cur.execute('''SELECT username FROM users WHERE id_user=%s''', [user_id])
+        username.append(cur.fetchone())
+    cur.close()
+    if request.method == 'GET':
+        return render_template('pending_reviews.html', title = title, isbn = isbn, username = username, pending_reviews = pending_reviews)
+    if request.method == 'POST':
+        for key, value in request.form.items():   #request.form is a dictionary we iterate to find which value is in
+            if value == 'Reject':         #if value is reject that means reject button was pressed and we get the key which holds the review_id
+                review_id = key 
+                cur = mysql.connection.cursor()
+                cur.execute('''DELETE FROM pending_reviews WHERE review_id=%s''', [review_id])
+                mysql.connection.commit()
+                cur.close()
+                return redirect('/manager/pending_reviews')
+            if value == 'Approve':
+                review_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT * FROM pending_reviews WHERE review_id=%s''', [review_id])
+                data = cur.fetchone()
+                cur.execute('''INSERT INTO reviews(star_review, review_text, ISBN, id_user) VALUES('{star_review}', '{review_text}', '{ISBN}', {id_user});'''.format(star_review=data[1], \
+                        review_text=data[2], ISBN=data[3],id_user=data[4]))
+                cur.execute('''DELETE FROM pending_reviews WHERE review_id=%s''', [review_id])
+                mysql.connection.commit()
+                cur.close()
+                return redirect('/manager/pending_reviews')
+
+
+
 
 @bp.route('/manager/pending_registrations', methods=('GET', 'POST'))
 @role_required([2])
@@ -481,81 +532,101 @@ def active_users():
         birthday.append(user[6])
     cur.close()
     if request.method == 'POST':
-        if request.form.get('Edit User'):
-            a = request.form.get('Edit User')[12:]
-            user_id = a[:-1]
-            return redirect(url_for('.edit_user', user_id=user_id))
-        if request.form.get('Show Delayed Returns'):
-            a = request.form.get('Show Delayed Returns')[23:]
-            user_id = a[:-1]
-            cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.title, b.ISBN, l.borrow_date FROM lending l INNER JOIN books b on l.ISBN = b.ISBN WHERE l.id_user=%s AND l.return_date is NULL AND l.borrow_date < %s''', [user_id, datetime.now().date()-timedelta(days=7)])            
-            title = []
-            borrow_date = []
-            isbn = []
-            results = list(cur.fetchall())
-            for result in results:
-                title.append(result[0])
-                borrow_date.append(result[2])
-                isbn.append(result[1])
-            return render_template('delayed_books.html', title=title, borrow_date=borrow_date, isbn=isbn, user_id = user_id)
-        if request.form.get('Show Lending History'):
-            a = request.form.get('Show Lending History')[23:]
-            user_id = a[:-1]       
-            cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.title, b.ISBN, l.borrow_date, l.return_date, l.lending_id \
-                  FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s \
-                ORDER BY borrow_date DESC;''', [user_id])
-            book = cur.fetchall()
-            cur.close()            
-            return render_template('user_lending_history.html', books=book, user_id = user_id)     
-        if request.form.get('Show Active Bookings'):
-            delete_expired_bookings()
-            a = request.form.get('Show Active Bookings')[23:]
-            user_id = a[:-1]
-            cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.ISBN, b.title, bk.date_of_booking FROM booking bk INNER JOIN books b \
-                on bk.ISBN = b.ISBN where id_user = %s ORDER BY date_of_booking DESC;''', [user_id])
-            book = cur.fetchall()
-            cur.execute('''SELECT count(*) FROM lending WHERE id_user = %s AND return_date is NULL''', [user_id])
-            active_lendings = cur.fetchone()[0]
-            cur.execute('''SELECT role, school_id FROM users WHERE id_user = %s''', [user_id])
-            res = cur.fetchall()
-            booker_role = res[0][0]
-            school_id = res[0][1]
-            cur.execute('''SELECT * FROM booking WHERE id_user = %s''', [user_id])
-            bookings = cur.fetchall()
-            copies = []
-            for b in book:
-                cur.execute('''SELECT copies_available FROM book_school WHERE ISBN = %s AND school_id = %s''', [b[0], school_id])
-                copies.append(cur.fetchone()[0])
-            cur.close()
-            return render_template('user_active_bookings.html', books=book, user_id = user_id, active_lendings=active_lendings,\
-                                   booker_role = booker_role, copies = copies, bookings = bookings)     
-        if request.form.get('Lend'):
-            booking_id =  request.form.get('Lend')[7:]
-            booking_id = booking_id[:-1]
-            cur = mysql.connection.cursor()
-            cur.execute('''SELECT * FROM booking WHERE booking_id = %s''', [booking_id])
-            books_to_lend = cur.fetchone()
-            cur = mysql.connection.cursor()
-            cur.execute('''INSERT INTO lending (borrow_date, id_user, ISBN, school_id) \
-                    VALUES ('{borrow_date}', {id_user}, '{ISBN}', {school_id});'''.format(borrow_date=date.today(),\
-                             id_user=books_to_lend[2], ISBN=books_to_lend[3],school_id=books_to_lend[4]))
-            cur.execute('''DELETE FROM booking WHERE booking_id = %s''', [booking_id])
-            mysql.connection.commit()
-            cur.close()
-            return redirect('/manager/active_users')
-        if request.form.get('Return'):
-            lending_id = request.form.get('Return')[9:]
-            lending_id = lending_id[:-1]
-            cur = mysql.connection.cursor()
-            cur.execute('''UPDATE lending SET return_date = '{date}' WHERE lending_id = {id};'''.format(date=date.today(),id=lending_id))
-            mysql.connection.commit()
-            flash("Book successfully returned!")
-            cur.close()
-            return redirect('/manager/active_users')
-
+        for key,value in request.form.items():
+            if value == 'Edit User':
+                user_id = key
+                return redirect(url_for('.edit_user', user_id=user_id))
+            
+            if value == 'Show Delayed Returns':
+                user_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT b.title, b.ISBN, l.borrow_date FROM lending l INNER JOIN books b on l.ISBN = b.ISBN \
+                    WHERE l.id_user=%s AND l.return_date is NULL AND l.borrow_date < %s''', [user_id, datetime.now().date()-timedelta(days=7)])            
+                title = []
+                borrow_date = []
+                isbn = []
+                results = list(cur.fetchall())
+                for result in results:
+                    title.append(result[0])
+                    borrow_date.append(result[2])
+                    isbn.append(result[1])
+                cur.execute('''SELECT username FROM users WHERE id_user=%s''', [user_id])
+                username = cur.fetchone()[0]
+                cur.close()
+                return render_template('delayed_books.html', title=title, borrow_date=borrow_date, isbn=isbn, user_id = user_id, username=username)
+            
+            if value == 'Show Lending History':
+                user_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT b.title, b.ISBN, l.borrow_date, l.return_date, l.lending_id \
+                      FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s \
+                    ORDER BY borrow_date DESC;''', [user_id])
+                book = cur.fetchall()
+                cur.execute('''SELECT username FROM users WHERE id_user=%s''', [user_id])
+                username = cur.fetchone()[0]
+                cur.close()            
+                return render_template('user_lending_history.html', books=book, user_id = user_id, username = username)     
+            
+            if value == 'Show Active Bookings':
+                delete_expired_bookings()
+                user_id = key 
+                cur = mysql.connection.cursor()               
+                cur.execute('''SELECT b.ISBN, b.title, bk.date_of_booking FROM booking bk INNER JOIN books b \
+                    on bk.ISBN = b.ISBN where id_user = %s ORDER BY date_of_booking DESC;''', [user_id])
+                book = cur.fetchall()
+                cur.execute('''SELECT count(*) FROM lending WHERE id_user = %s AND return_date is NULL''', [user_id])
+                active_lendings = cur.fetchone()[0]
+                cur.execute('''SELECT role, school_id, username FROM users WHERE id_user = %s''', [user_id])
+                res = cur.fetchall()
+                booker_role = res[0][0]
+                school_id = res[0][1]
+                username = res[0][2]
+                cur.execute('''SELECT * FROM booking WHERE id_user = %s''', [user_id])
+                bookings = cur.fetchall()
+                copies = []
+                for b in book:
+                    cur.execute('''SELECT copies_available FROM book_school WHERE ISBN = %s AND school_id = %s''', [b[0], school_id])
+                    copies.append(cur.fetchone()[0])
+                cur.close()
+                return render_template('user_active_bookings.html', books=book, user_id = user_id, active_lendings=active_lendings,\
+                                       booker_role = booker_role, copies = copies, bookings = bookings, username = username)     
+            if value == 'Lend':
+                booking_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT * FROM booking WHERE booking_id = %s''', [booking_id])
+                books_to_lend = cur.fetchone()
+                cur = mysql.connection.cursor()
+                cur.execute('''INSERT INTO lending (borrow_date, id_user, ISBN, school_id) \
+                        VALUES ('{borrow_date}', {id_user}, '{ISBN}', {school_id});'''.format(borrow_date=date.today(),\
+                                 id_user=books_to_lend[2], ISBN=books_to_lend[3],school_id=books_to_lend[4]))
+                cur.execute('''DELETE FROM booking WHERE booking_id = %s''', [booking_id])
+                mysql.connection.commit()
+                cur.close()
+                return redirect('/manager/active_users')
+            if value == 'Return':
+                lending_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE lending SET return_date = '{date}' WHERE lending_id = {id};'''.format(date=date.today(),id=lending_id))
+                mysql.connection.commit()
+                flash("Book successfully returned!")
+                cur.close()
+                return redirect('/manager/active_users')
+            
+            if value == 'Show Reviews':
+                user_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT b.title, b.ISBN, r.review_text, r.star_review FROM reviews r INNER JOIN books b ON b.ISBN = r.ISBN WHERE id_user=%s;''', [user_id])
+                reviews = cur.fetchall()
+                sum = 0
+                for review in reviews:  #find average star review of user
+                    sum += review[3]
+                average_star_review = sum/len(review)
+                cur.execute('''SELECT username FROM users WHERE id_user=%s''', [user_id])
+                username = cur.fetchone()[0]
+                cur.close()
+                return render_template('user_reviews.html', reviews = reviews, username = username, average = average_star_review)
+            
+        
     if request.method == 'GET':
         return render_template('active_users.html', name=name, username=username, role=role,birthday=birthday, user_id=user_id)
 
@@ -618,6 +689,7 @@ def details(isbn):
                         VALUES ('{date_of_booking}', {id_user}, '{ISBN}', {school_id});'''.format(date_of_booking=dt_string,\
                                  id_user=session['userid'], ISBN=isbn,school_id=session['school_id']))
             mysql.connection.commit()
+            flash('Your reservation was submitted successfully')
             return render_template('book_details.html', details = details, categories = categories, authors = authors)
         
         if request.form.get('review'):
@@ -627,11 +699,11 @@ def details(isbn):
             review = request.form['add_review']
             stars = request.form.get('rate')
             curs = mysql.connection.cursor()
-            curs.execute('''INSERT INTO reviews (star_review, review_text, ISBN, id_user) \
+            curs.execute('''INSERT INTO pending_reviews (star_review, review_text, ISBN, id_user) \
                         VALUES ({star_review}, '{review_text}', '{ISBN}', {id_user});'''.format(star_review=int(stars),\
                                  id_user=session['userid'], ISBN=isbn,review_text=review))
             mysql.connection.commit()
             curs.close()
-            flash(stars)
+            flash("Your Review was submitted for approval")
             return render_template('book_details.html', details = details, categories = categories, authors = authors)
             

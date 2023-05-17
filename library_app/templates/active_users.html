@@ -16,12 +16,12 @@
             <p><strong>Teacher</strong></p>
             {%endif%}
             <form method="post">
-                <input type="submit" name = "Edit User" value="Edit User (#{{user_id[i]}})">
-                <input type="submit" name = "Show Lending History" value="Show Lending History (#{{user_id[i]}})">
-                <input type="submit" name = "Show Active Bookings" value="Show Active Bookings (#{{user_id[i]}})">
-                <input type="submit" name = "Show Delayed Returns" value="Show Delayed Returns (#{{user_id[i]}})">
-                <input type="submit" name = "Show User Reviews" value="Show User Reviews (#{{user_id[i]}})">
-                <input type="submit" name = "Deactivate User" value="Deactivate User (#{{user_id[i]}})">
+                <input type="submit" name = {{user_id[i]}}  value="Edit User">
+                <input type="submit" name = {{user_id[i]}}  value="Show Lending History">
+                <input type="submit" name = {{user_id[i]}}  value="Show Active Bookings">
+                <input type="submit" name = {{user_id[i]}}  value="Show Delayed Returns">
+                <input type="submit" name = {{user_id[i]}}  value="Show Reviews">
+                <input type="submit" name = {{user_id[i]}}  value="Deactivate User">
             </form>
         {% if not loop.last %}
             <hr>
