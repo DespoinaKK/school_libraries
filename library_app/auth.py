@@ -329,7 +329,7 @@ def manager_home():
         if request.form.get('Pending Reviews'):
             return redirect('/manager/pending_reviews')
     if request.method == 'GET':
-        return render_template('manager_home.html')
+        return render_template('manager_home.html', name=session['name'])
 
 @bp.route('/manager/pending_reviews', methods=('GET', 'POST'))
 @role_required([2])
@@ -353,6 +353,8 @@ def pending_reviews():
         return render_template('pending_reviews.html', title = title, isbn = isbn, username = username, pending_reviews = pending_reviews)
     if request.method == 'POST':
         for key, value in request.form.items():   #request.form is a dictionary we iterate to find which value is in
+
+            
             if value == 'Reject':         #if value is reject that means reject button was pressed and we get the key which holds the review_id
                 review_id = key 
                 cur = mysql.connection.cursor()
@@ -533,6 +535,24 @@ def active_users():
     cur.close()
     if request.method == 'POST':
         for key,value in request.form.items():
+
+            if value == 'search':
+                search_name = request.form['name']
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT * FROM users WHERE name=%s AND school_id=%s''', [search_name, school_id])
+                user_info = cur.fetchone()
+                cur.close()
+                if user_info is None:
+                    flash('User does not exist. Try again!')
+                    return render_template('active_users.html', name=name, username=username, role=role,birthday=birthday, user_id=user_id)
+                    
+                else:
+                   user_id = user_info[0]
+                   role = user_info[5]
+                   username = user_info[2]
+                   birthday = user_info[6] 
+                   return render_template('single_user_info.html', user_id = user_id, role = role, username = username, birthday = birthday, name=search_name)
+
             if value == 'Edit User':
                 user_id = key
                 return redirect(url_for('.edit_user', user_id=user_id))

@@ -1,0 +1,23 @@
+<html>
+    <head>
+        <title>User {{name}}</title>
+    </head>
+    <h2>{{ name }}</h2>
+    <p><strong>User Id:</strong> #{{user_id}}</p>
+    <p><strong>User:</strong> {{username}}</p>
+    <p><strong>Birthday:</strong> {{birthday}}</p>
+    {% if role[0] == 0 %}
+    <p><strong>Student</strong></p>
+    {%endif%}
+    {% if role[0] == 1 %}
+    <p><strong>Teacher</strong></p>
+    {%endif%}
+    <form method="post">
+        <input type="submit" name = {{user_id}}  value="Edit User">
+        <input type="submit" name = {{user_id}}  value="Show Lending History">
+        <input type="submit" name = {{user_id}}  value="Show Active Bookings">
+        <input type="submit" name = {{user_id}}  value="Show Delayed Returns">
+        <input type="submit" name = {{user_id}}  value="Show Reviews">
+        <input type="submit" name = {{user_id}}  value="Deactivate User">
+    </form>
+</html>
