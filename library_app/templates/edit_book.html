@@ -1,0 +1,54 @@
+
+<html>
+    <head>
+        <title>Edit Book</title>
+    </head>
+    <body>
+    <h1>Edit Book Information</h1>
+<form method="post">
+    <label for="title">Title:</label>
+    <input name="title" id="title" value="{{details[0]}}" required>
+    <br>
+    <label for="isbn">ISBN:</label>
+    <input name="isbn" id="isbn" value="{{details[2]}}" required>
+    <br>
+    <label for="authors">Authors(seperate authors by comma(,)):</label>
+    <input name="authors" id="authors" value="{% for author in authors %}{{author[0]}}{% if not loop.last %},{% endif %}{% endfor %}" required>
+    <br>
+    <label for="publisher">Publisher:</label>
+    <input type="publisher" id="publisher" name="publisher" value="{{details[1]}}"required>
+    <br>
+    <label for="page Number">Page Number:</label>
+    <input type="page number" id="page number" name="page number" value="{{details[3]}}"required>
+    <br>
+    <label for="summary">Summary:</label>
+    <input type="summary" id="summary" name="summary" value="{{details[4]}}"required>
+    <br>
+    <label for="language">Language:</label>
+    <input type="language" id="language" name="language" value="{{details[5]}}"required>
+    <br>
+    <label for="keywords">Keywords:</label>
+    <input type="keywords" id="keywords" name="keywords" value="{{details[6]}}"required>
+    <br>
+    <p>Categories:</p>
+    {% for category in all_categories %}
+    <label>
+        {%if category[1] in bk_categories %}
+        <input type="checkbox" name="options[]" value="{{ category[0] }}" checked>
+        {{ category[1] }}
+        {% elif category[1] not in bk_categories %}
+        <input type="checkbox" name="options[]" value="{{ category[0] }}">
+        {{ category[1] }}
+        {% endif %}
+    </label>
+    {% endfor %}
+    <br>
+    <br>
+    <input type="submit" name="Save" value="Save">
+  </form>
+    {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+    {% endfor %}
+
+</body>
+  </html>

@@ -1,0 +1,46 @@
+<html>
+    <head>
+        <title>Book</title>
+    </head>
+    <body>
+        <h1>{{ details[0] }}</h1>
+        <p><strong>ISBN: </strong>{{ details[2] }}</p>
+        <p><strong>Authors:</strong> 
+            {% for author in authors %}
+            {{ author[0] }}
+            {% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        <p><strong>Publisher: </strong> {{ details[1] }}</p>
+        <p><strong>Page Number: </strong> {{ details[3] }}</p>
+        <p><strong>Summary: </strong> {{ details[4] }}</p>
+        <p><strong>Language: </strong> {{ details[5] }}</p>
+        <p><strong>Keywords: </strong> {{ details[6] }}</p>
+        <p><strong>Categories:</strong>  
+            {% for category in categories %}
+            {{ category[0] }}
+            {% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        {% if in_school==1 %}
+        {%if copies[0][0] != 0 %}
+        <p><strong>Copies Available: </strong>{{copies[0][0]}}</p>
+        <form method="post">
+            <input type="submit" name = "Lend Book" value="Lend Book">
+        </form>
+        {%else%}
+        <p>There are no copies of this book left at the moment. Lending is not possible.</p>
+        {%endif%}
+        {%endif%}
+        {% if in_school==0 %}
+        <p>This book does not exist in your school!</p>
+        {%endif%}
+        <form method="post">
+            <input type="submit" name = "Edit Book Info" value="Edit Book Info">
+            <input type="submit" name = "Show Reviews" value="Show Reviews">
+        </form>
+        {% for mesg in get_flashed_messages() %}
+            <p>{{ mesg }}</p>
+            {% endfor %}
+    </body>
+</html>

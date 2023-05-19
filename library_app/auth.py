@@ -68,8 +68,8 @@ def register():
             return render_template('register.html', schools = schools)
         else:
             cur_username = mysql.connection.cursor()
-            cur_username.execute('''(SELECT * FROM users WHERE username = %s) \
-                UNION (SELECT * FROM users_unregistered WHERE username = %s);''',\
+            cur_username.execute('''(SELECT id_user FROM users WHERE username = %s) \
+                UNION (SELECT id_user FROM users_unregistered WHERE username = %s);''',\
                                   (username,username))
             exists = cur_username.fetchall()
             if exists:
@@ -99,7 +99,7 @@ def login():
         password = request.form['password']
         cur = mysql.connection.cursor()
         message = None
-        cur.execute('''SELECT * FROM users WHERE username = %s AND password = %s;''', (username, password))
+        cur.execute('''SELECT * FROM users WHERE username = %s AND password = %s AND active=1;''', (username, password))
         user = cur.fetchone()
         cur.close()
         
@@ -328,8 +328,139 @@ def manager_home():
             return redirect('/manager/pending_registrations')
         if request.form.get('Pending Reviews'):
             return redirect('/manager/pending_reviews')
+        if request.form.get('Search Books'):
+            return redirect('/manager/books')
     if request.method == 'GET':
         return render_template('manager_home.html', name=session['name'])
+    
+@bp.route('/manager/books', methods=('GET', 'POST'))
+@role_required([2])
+def manager_books():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT title, isbn FROM books''')
+    all_books = cur.fetchall()
+    cur.execute('''SELECT category_id, name FROM category''')
+    categories = cur.fetchall()
+    if request.method == 'GET':
+        return render_template ('manager_search_books.html', all_books = all_books, categories=categories)
+
+    if request.method == 'POST':
+
+        if request.form.get('search author'):
+            author = request.form['author']
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT * FROM author WHERE name = %s;''', [author])
+            author = cur.fetchone()
+            if author:
+                author_id = author[0]
+                cur.execute('''SELECT b.ISBN, b.title FROM author a INNER JOIN author_book ab on a.author_id =  ab.author_id \
+                        INNER JOIN books b on ab.ISBN = b.ISBN  WHERE a.author_id = %s;''', [author_id])
+                books = cur.fetchall()
+                return render_template('search.html', books = books)
+            else:
+                flash('No results found from input author.')
+                redirect('/manager/books')
+
+        if request.form.get('search categories'):
+           options = request.form.getlist('options[]')
+           if options == []:
+                flash('Choose Categories!')
+                return redirect('/manager/books')
+           else:
+                search_cur = mysql.connection.cursor()
+                query = []
+                for option in options:
+                     query.append('''(SELECT ISBN FROM book_category WHERE category_id = %s)''' % (option))
+                u = " INTERSECT "
+                u = u.join(query)
+                u = "(" + u + ") bk"
+                
+                q1 = '''SELECT * FROM ''' + u + ''' INNER JOIN books b on bk.ISBN = b.ISBN''' #store query to use later
+                
+                search_cur.execute('''SELECT * FROM ''' + u + ''' INNER JOIN books b on bk.ISBN = b.ISBN;''')
+                books = search_cur.fetchall()
+                search_cur.close()
+                if books == ():
+                    flash('No results found for input categories.')
+                    return redirect('/manager/books')
+                else:
+                    return render_template('search.html', books = books)
+                
+        if request.form.get('search title'):
+            title = request.form['title']
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+                  WHERE b.title = %s;''', [title])
+            books = cur.fetchall()
+            cur.close()
+            if books:
+                return render_template('search.html', books = books)
+            else:
+                flash("No results found")
+                return redirect('/manager/books')
+
+        for key,value in request.form.items():
+            if value == 'Details':
+                isbn = key
+                return redirect(url_for('auth.manager_book_details', isbn=isbn))
+
+
+@bp.route('/manager/books/details/<isbn>', methods=('GET', 'POST'))
+@role_required([2])
+def manager_book_details(isbn):
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM books WHERE ISBN = %s;''',[isbn])
+    details = cur.fetchone()
+    cur.execute('''SELECT name FROM category c INNER JOIN book_category bk on c.category_id = bk.category_id \
+               where bk.ISBN = %s;''', [isbn])
+    categories = cur.fetchall()
+    cur.execute('''SELECT name FROM author a INNER JOIN author_book ab on a.author_id = ab.author_id \
+               where ab.ISBN = %s;''', [isbn])
+    authors = cur.fetchall()
+    cur.execute('''SELECT copies_available FROM book_school WHERE ISBN=%s AND school_id = %s;''', [isbn, session['school_id']])
+    copies = cur.fetchall()
+    cur.close()
+    in_school = 1
+    if copies == ():
+        in_school = 0
+    if request.method == 'GET':
+        return render_template('manager_book_details.html', details = details, categories = categories, authors = authors, in_school = in_school, copies = copies) 
+    if request.method == 'POST':
+        if request.form.get('Edit Book Info'):
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT category_id, name FROM category''')
+            all_categories=cur.fetchall()
+            return render_template('edit_book.html', details = details, authors = authors, bk_categories = [row[0] for row in categories], all_categories=all_categories)
+        
+        if request.form.get('Save'):
+            title = request.form['title']
+            isbn = request.form['isbn']
+            authors = request.form['authors']
+            publisher = request.form['publisher']
+            page_number = request.form['page_number']
+            summary = request.form['summary']
+            language = request.form['language']
+            keywords = request.form['keywords']
+            cur = mysql.connection.cursor()
+            query = f"UPDATE books SET title='{title}', publisher='{publisher}', page_number={page_number}, summary='{summary}',\
+                  language='{language}', keywords={keywords}' WHERE ISBN='{isbn}';"
+            cur.execute(query)
+            mysql.commit()
+            author_list=authors.split(',')
+            for author in author_list:
+                query =f"SELECT author_id FROM author WHERE name='{author}';"
+                cur.execute(query)
+                author_id = cur.fetchall()
+                if author_id == ():
+                    query = f"INSERT INTO author (name) VALUES '{author}';"
+                    cur.execute(query) 
+                    mysql.commit()
+            ###not finished
+
+
+        return render_template('manager_book_details.html', details = details, categories = categories, authors = authors, in_school = in_school, copies = copies) 
+
+
 
 @bp.route('/manager/pending_reviews', methods=('GET', 'POST'))
 @role_required([2])
@@ -519,7 +650,7 @@ def active_lendings():
 def active_users():
     cur = mysql.connection.cursor()
     school_id = session['school_id']
-    cur.execute('''SELECT * FROM users WHERE school_id=%s ORDER BY id_user;''', [school_id])
+    cur.execute('''SELECT * FROM users WHERE school_id=%s AND active=1 ORDER BY id_user;''', [school_id])
     users = list(cur.fetchall())
     name = []
     username = []
@@ -646,6 +777,13 @@ def active_users():
                 cur.close()
                 return render_template('user_reviews.html', reviews = reviews, username = username, average = average_star_review)
             
+            if value == 'Deactivate User':
+                user_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE users SET active=0 WHERE id_user=%s''', [user_id])
+                mysql.connection.commit()
+                flash("User deactivated!")
+                return redirect('/manager/active_users')            
         
     if request.method == 'GET':
         return render_template('active_users.html', name=name, username=username, role=role,birthday=birthday, user_id=user_id)

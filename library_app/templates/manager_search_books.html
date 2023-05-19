@@ -1,0 +1,55 @@
+<html>
+    <head><title>Books</title></head>
+    <body>
+        <h1>Search Books</h1>
+        <form method="post">
+        <table>
+            <tr>
+                <td>
+                    <label for="title"><strong>Search by Title:</strong></label>
+                    <input name="title" id="title">
+                    <input type="submit" name="search title" value="Search Title">
+                </td>
+                <td></td><td></td><td></td>
+                <td>
+                    <label for="author"><strong>Search by Author:</strong></label>
+                    <input name="author" id="author">
+                    <input type="submit" name="search author" value="Search Author">
+                </td>
+                <td></td><td></td><td></td>
+                <td>
+                    <label for="copies"><strong>Search by Copies:</strong></label>
+                    <input name="copies" id="copies">
+                    <input type="submit" name="search copies" value="Search Copies">
+                </td>
+            </tr>
+        </table>
+        <p><strong>Search by category:</strong></p>
+        {% for category in categories %}
+        <label>
+            <input type="checkbox" name="options[]" value="{{ category[0] }}">
+            {{ category[1] }}
+        </label>
+        {%endfor%}
+        <br>
+        <input type="submit" name="search categories" value="Search Category">
+        </form>
+        {% for mesg in get_flashed_messages() %}
+        <p>{{ mesg }}</p>
+        {% endfor %}
+    
+        <hr>
+        <h1>All Books</h1>
+        {% for book in all_books %} 
+        <p><strong>Title:</strong> {{book[0]}}</p>
+        <p><strong>ISBN:</strong> {{book[1]}}</p>
+        <form method="post">
+            <input type="submit" name="{{book[1]}}" value="Details">
+        </form>
+        {% if not loop.last %}
+        <hr>
+        {% endif %}
+        {% endfor %}
+
+    </body>
+</html>
