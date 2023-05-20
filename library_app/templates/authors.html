@@ -8,7 +8,7 @@
 
         {% for i in range(authors|length): %}
             <h2>{{ authors[i][1] }}</h2>
-            <form>
+            <form method="post">
             <input type = 'submit' name = "{{authors[i][0]}}" value = "See author's books">
             </form>
             {% if not loop.last %}

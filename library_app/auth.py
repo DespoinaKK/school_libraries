@@ -243,6 +243,9 @@ def school_authors():
                 cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN author_book ab ON b.ISBN=ab.ISBN WHERE author_id=%s''', [author_id])
                 books = cur.fetchall()
                 return render_template('search.html', books = books) 
+            if value == "Details":
+                isbn = key
+                return redirect(url_for(".details", isbn=isbn))
 
 @bp.route('/user/bookings', methods=('GET', 'POST'))
 @role_required([0, 1])
