@@ -86,6 +86,52 @@ def register():
                 return render_template('register.html', schools = schools)
     return render_template('register.html', schools = schools)
 
+@bp.route('/manager_registration', methods=('GET', 'POST'))
+def manager_registration():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT school_id, name FROM `schools` ORDER BY name")
+    schools = cur.fetchall()
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        school_id = request.form.get('schools')
+        name = request.form['name']
+        birthday = request.form['birthday']
+        role = 2
+        invalid_char = False
+        if len(username) > 15 or len(password) > 15:
+            invalid_char = True
+            flash('Up to 15 characters can be used for username and password')
+        special_characters = '''"'!@#$%^&*()-+?=,<>/'''
+        if not username.islower() or any(c in special_characters for c in username) :
+            invalid_char = True
+            flash('Username must contain only lowercase latin letters or _')
+        if not (name.isalpha() or ' ' in name):
+            invalid_char = True
+            flash('Only latin characters can be used for name')
+        if invalid_char:
+            return render_template('manager_registration.html', schools = schools)
+        else:
+            cur_username = mysql.connection.cursor()
+            cur_username.execute('''(SELECT id_user FROM users WHERE username = %s) \
+                UNION (SELECT id_user FROM users_unregistered WHERE username = %s);''',\
+                                  (username,username))
+            exists = cur_username.fetchall()
+            if exists:
+                flash('This username is already being used. Choose a different one')
+                return render_template('manager_registration.html', schools = schools)
+            else:
+                # valid username
+                # pending registration
+                # insert to users_unregistered
+                cur_insert = mysql.connection.cursor()
+                cur_insert.execute('''INSERT INTO managers_unregistered (name, username, password, school_id, role, birthday) \
+                    VALUES ('{name}', '{username}', '{password}', {school_id}, {role}, '{birthday}');'''.format(name=name,\
+                             username=username, password=password,school_id=school_id, role=role, birthday=birthday))
+                mysql.connection.commit()
+                return render_template('manager_registration.html', schools = schools)
+    return render_template('manager_registration.html', schools = schools)
+
 @bp.route('/logout', methods=('GET', 'POST'))
 def logout():
     session.clear()
@@ -381,11 +427,51 @@ def profile():
 @role_required([3])
 def admin_home():
     if request.method == 'POST':
+        if request.form.get('Pending manager registrations'):
+            return redirect('/admin/pending_manager_registrations')
         if request.form.get('Add School'):
             return redirect('/admin/add_school')
-
     if request.method == 'GET':
         return render_template('admin_home.html')
+    
+@bp.route('/admin/pending_manager_registrations', methods=('GET', 'POST'))
+@role_required([3])
+def pending_manager_registrations():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM managers_unregistered''')
+    applications = list(cur.fetchall())
+    cur.close()
+    if request.method == 'GET':
+        return render_template('pending_manager_registrations.html', applications = applications)
+    if request.method == 'POST':
+        if request.form.get('Reject'):
+            cur = mysql.connection.cursor()
+            id = request.form.get('Reject')[8:]
+            cur.execute('''DELETE FROM managers_unregistered WHERE id_user = %s''', [id])
+            mysql.connection.commit()
+            cur.close()
+            return redirect('/admin/pending_manager_registrations')
+        if request.form.get('Accept'):
+            id = request.form.get('Accept')[8:]
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT * FROM managers_unregistered WHERE id_user = %s''', [id])
+            user_data = cur.fetchone()
+            name = user_data[1]
+            username=  user_data[2]
+            password = user_data[3]
+            school_id = user_data[4]
+            role = user_data[5]
+            birthday = user_data[6]
+            cur.execute('''DELETE FROM users WHERE school_id = %s AND role = %s''', [school_id, role])
+            mysql.connection.commit()
+            cur.execute('''INSERT INTO users(name, username, password, school_id, role, birthday) \
+                    VALUES ('{name}', '{username}', '{password}', {school_id}, {role}, '{birthday}');'''.format(name=name,\
+                             username=username, password=password,school_id=school_id, role=role, birthday=birthday))
+            mysql.connection.commit()
+            cur.execute('''DELETE FROM managers_unregistered WHERE id_user = %s''', [id])
+            mysql.connection.commit()
+            cur.close()
+            return redirect('/admin/pending_manager_registrations')
     
 @bp.route('/admin/add_school', methods=('GET', 'POST'))
 @role_required([3])

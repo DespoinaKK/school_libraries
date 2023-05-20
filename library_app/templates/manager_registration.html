@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Manager registration{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="username">Username:</label>
+    <input name="username" id="username" required>
+    <br>
+    <label for="password">Password:</label>
+    <input type="password" name="password" id="password" required>
+    <br>
+    <label for="name">Full Name:</label>
+    <input name="name" id="name" required>
+    <br>
+    <label for="birthday">Birthday:</label>
+    <input type="date" id="birthday" name="birthday" required>
+    <br>
+    <label for="school">Choose your school:</label>
+    <select name="schools" id="schools">
+        <body>
+        {% for school in schools %}
+            <option name ="{{school[0]}}" value="{{school[0]}}">{{school[1]}}</option>
+        {% endfor %}
+        </body>
+    </select>
+    <br>
+   
+    </body>
+    </select>
+    {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+    {% endfor %}
+    <input type="submit" value="Register">
+  </form>
+{% endblock %}
