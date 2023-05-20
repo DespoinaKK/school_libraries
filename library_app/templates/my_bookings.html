@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <title>My Reservations</title>
+    </head>
+    <body>
+        <h1>My Reservations</h1>
+        {% if isbn|length == 0: %}
+        <p>You have no active reservations.</p>
+        {% endif %}
+        {% for i in range(isbn|length): %}
+            <h2>{{ title[i] }}</h2>
+            <p><strong>ISBN:</strong> {{ isbn[i] }}</p>
+            <p><strong>Date of Reservation:</strong> {{ date_of_booking[i] }}</p>
+            <p><strong>Reservation expires at:</strong> {{ date_of_exp[i] }}</p>
+            <form method = "post">
+                <input type="submit" name="{{isbn[i]}}" value = "Cancel Reservation">
+            </form>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+        {% endfor %}
+        {% for mesg in get_flashed_messages() %}
+        <p>{{ mesg }}</p>
+        {% endfor %}
+    </body>
+</html>

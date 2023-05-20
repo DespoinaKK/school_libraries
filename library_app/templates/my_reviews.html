@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <title>My Reviews</title>
+    </head>
+    <body>
+        <h1>My Reviews</h1>
+        {% for i in range(approved_reviews|length): %}
+            <h2>{{ title[i][0] }}</h2>
+            <p>ISBN: {{ isbn[i] }}</p>
+            <p><strong>Star Review:</strong> {{approved_reviews[i][1]}}/5</p>
+            <p><strong>Review:</strong> {{approved_reviews[i][2]}}</p>
+            <hr>
+        {% endfor %}
+        <hr>
+        <h1>Not approved yet:</h1>
+        {% for i in range(pending_reviews|length): %}
+            <h2>{{ pending_title[i][0] }}</h2>
+            <p>ISBN: {{ pending_isbn[i] }}</p>
+            <p><strong>Star Review:</strong> {{pending_reviews[i][1]}}/5</p>
+            <p><strong>Review:</strong> {{pending_reviews[i][2]}}</p>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+        {% endfor %}
+        {% for mesg in get_flashed_messages() %}
+        <p>{{ mesg }}</p>
+        {% endfor %}
+    </body>
+</html>

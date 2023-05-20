@@ -3,22 +3,29 @@
     <head>
         <title>Lending History</title>
     </head>
-    <body>
         <h1>Books I have borrowed</h1>
         {% block content %}
-
+        <body>
         {% for book in books: %}
+        {%if book[2]:%}
             <h2>{{ book[6] }}</h2>
             <p>ISBN: {{ book[4] }}</p>
             <p>Borrowed: {{ book[1] }}</p>
             <p>Returned: {{ book[2] }}</p>
+        {% endif %}
+        {%if not book[2]:%}
+            <h2 style="color:blue;">{{ book[6] }}</h2>
+            <p style="color:blue;">ISBN: {{ book[4] }}</p>
+            <p style="color:blue;">Borrowed: {{ book[1] }}</p>
+            <p style="color:blue;">Returned: {{ book[2] }}</p>
+        {% endif %}
         {% if not loop.last %}
             <hr>
         {% endif %}
+        </body>
   {% endfor %}
 {% endblock %}
 
-    </body>
 </html>
 
 

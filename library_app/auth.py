@@ -2,7 +2,7 @@ from flask import Flask,render_template, request,redirect,Blueprint,flash,sessio
 from flask_mysqldb import MySQL
 import functools 
 from datetime import datetime, date, timedelta
-
+import time
 from .make_image import make_image
 
 app = Flask(__name__)
@@ -137,12 +137,18 @@ def show_books():
     if request.method == 'POST':
         if request.form.get('show books'):
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT * FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s;''', [pid])
+            cur.execute('''SELECT * FROM lending l INNER JOIN books b on l.ISBN = b.ISBN where id_user = %s ORDER BY borrow_date DESC;''', [pid])
             book = cur.fetchall()
             cur.close()
             return render_template('my_books.html', books=book)
         if request.form.get('show profile'):
             return redirect('user/profile')
+        if request.form.get('show reviews'):
+            return redirect('user/reviews')
+        if request.form.get('show delays'):###########
+            return redirect('user/delays')
+        if request.form.get('show bookings'):
+            return redirect('user/bookings')
         if request.form.get('search'):
            options = request.form.getlist('options[]')
            cat = False
@@ -221,6 +227,77 @@ def show_books():
       
     if request.method == 'GET':
         return render_template('user.html', categories=categories, name = name)
+
+@bp.route('/user/bookings', methods=('GET', 'POST'))
+@role_required([0, 1])
+def my_bookings():
+    delete_expired_bookings()
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT b.isbn, b.title, bk.date_of_booking FROM booking bk INNER JOIN books b ON bk.ISBN = b.ISBN WHERE bk.id_user = %s''', [session['userid']])
+    bookings = list(cur.fetchall())
+    isbn = []
+    title = []
+    date_of_booking = []
+    cur.close()
+    for book in bookings:
+        isbn.append(book[0])
+        title.append(book[1])
+        date_of_booking.append(book[2])
+    date_of_exp = [i + timedelta(days=7) for i in date_of_booking]
+    if request.method == 'GET':
+        return render_template('my_bookings.html', isbn = isbn, title = title, date_of_booking = date_of_booking, date_of_exp = date_of_exp)
+    if request.method == 'POST':
+        for key,value in request.form.items():
+            if value == "Cancel Reservation":
+                isbn = key
+                cur = mysql.connection.cursor()
+                cur.execute('''DELETE FROM booking WHERE ISBN = %s AND id_user = %s''', [isbn, session['userid']])
+                mysql.connection.commit()
+                flash("Your reservation was cancelled successfully.")
+                return redirect('/user/bookings')
+
+@bp.route('/user/delays', methods=('GET', 'POST'))
+@role_required([0, 1])
+def my_delays():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT l.isbn, b.title, l.borrow_date FROM lending l INNER JOIN books b ON l.ISBN = b.ISBN WHERE l.id_user = %s \
+        AND l.return_date IS NULL AND l.borrow_date < %s''', [session['userid'], datetime.now().date()-timedelta(days=7)])
+    delays = list(cur.fetchall())
+    title = []
+    isbn = []
+    lending_date = []
+    for book in delays:
+        isbn.append(book[0])
+        title.append(book[1])
+        lending_date.append(book[2])
+    days_of_delay_1 = [date.today() - i for i in lending_date]
+    days_of_delay = [i.days for i in days_of_delay_1]
+    return render_template("my_delays.html", title=title, isbn=isbn, lending_date=lending_date, days_of_delay=days_of_delay)
+
+@bp.route('/user/reviews', methods=('GET', 'POST'))
+@role_required([0, 1])
+def my_reviews():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT review_id, star_review, review_text, ISBN FROM reviews WHERE id_user = %s''', [session['userid']])
+    approved_reviews = list(cur.fetchall())
+    title = []
+    isbn = []
+    for review in approved_reviews:
+        isbn.append(review[3])
+        cur.execute('''SELECT title FROM books WHERE ISBN=%s''', [review[3]])
+        title.append(cur.fetchone())
+    cur.execute('''SELECT review_id, star_review, review_text, ISBN FROM reviews WHERE id_user = %s''', [session['userid']])
+    pending_reviews = list(cur.fetchall())
+    pending_title = []
+    pending_isbn = []
+    for review in pending_reviews:
+        pending_isbn.append(review[3])
+        cur.execute('''SELECT title FROM books WHERE ISBN=%s''', [review[3]])
+        pending_title.append(cur.fetchone())
+    cur.close()
+    if request.method == 'GET':
+        return render_template('my_reviews.html', title = title, isbn = isbn, approved_reviews = approved_reviews,\
+                               pending_title = pending_title, pending_isbn = pending_isbn, pending_reviews = pending_reviews)
 
 @bp.route('/user/profile', methods=('GET', 'POST'))
 @role_required([0, 1])
@@ -634,16 +711,17 @@ def active_lendings():
         return render_template('active_lendings.html', lendings = lendings, borrower_username = borrower_username,
             title = title)
     if request.method == 'POST':
-        if request.form.get('Return'):
-            lending_id =  request.form.get('Return')[9:]
-            cur = mysql.connection.cursor()
-            cur.execute('''SELECT * FROM lending WHERE lending_id = %s''', [lending_id])
-            books_to_return = cur.fetchone()
-            cur = mysql.connection.cursor()
-            cur.execute('''UPDATE lending SET return_date = %s WHERE lending_id = %s;''', [date.today(),lending_id])
-            mysql.connection.commit()
-            cur.close()
-            return redirect('/manager/active_lendings')
+        for key, value in request.form.items():
+            if value == 'Return':
+                lending_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT * FROM lending WHERE lending_id = %s''', [lending_id])
+                books_to_return = cur.fetchone()
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE lending SET return_date = %s WHERE lending_id = %s;''', [date.today(),lending_id])
+                mysql.connection.commit()
+                cur.close()
+                return redirect('/manager/active_lendings')
 
 @bp.route('/manager/active_users', methods=('GET', 'POST'))
 @role_required([2])
@@ -829,6 +907,11 @@ def details(isbn):
     can_book = True
     cur.execute('''SELECT role FROM users WHERE id_user = %s''', [session['userid']])
     role = cur.fetchone()[0]
+    # find delayed books
+    cur.execute('''SELECT count(*) FROM lending WHERE return_date IS NULL AND id_user = %s AND borrow_date < %s''', \
+                [session['userid'], datetime.now()-timedelta(days=7)])
+    if cur.fetchone()[0]:
+        can_book = False
     if no_of_active_bookings >= 2 and role == 0:
         can_book = False
     elif no_of_active_bookings >= 1 and role == 1:

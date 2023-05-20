@@ -1,0 +1,23 @@
+<html>
+    <head>
+        <title>Delayed Returns</title>
+    </head>
+    <body>
+        <h1>Delayed Returns</h1>
+        {% if title|length == 0: %}
+        <p>Congratulations! No returns are delayed as of now.</p>
+        {% endif %}
+        {% for i in range(title|length): %}
+            <h2>{{ title[i] }}</h2>
+            <p><strong>ISBN:</strong> {{ isbn[i] }}</p>
+            <p><strong>Lending Date:</strong> {{lending_date[i]}}</p>
+            <p style="color:red;"><strong>Days of Delay:</strong> {{days_of_delay[i]}}</p>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+        {% endfor %}
+        {% for mesg in get_flashed_messages() %}
+        <p>{{ mesg }}</p>
+        {% endfor %}
+    </body>
+</html>
