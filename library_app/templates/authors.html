@@ -1,0 +1,21 @@
+
+<html>
+    <head>
+        <title>Authors</title>
+    </head>
+    <body>
+        <h1>My school's library authors</h1>
+
+        {% for i in range(authors|length): %}
+            <h2>{{ authors[i][1] }}</h2>
+            <form>
+            <input type = 'submit' name = "{{authors[i][0]}}" value = "See author's books">
+            </form>
+            {% if not loop.last %}
+            <hr>
+        {% endif %}
+  {% endfor %}
+
+    </body>
+</html>
+

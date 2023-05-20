@@ -20,7 +20,6 @@ def delete_expired_bookings():
     cur = mysql.connection.cursor()
     cur.execute('''DELETE FROM booking WHERE date_of_booking < %s''', [datetime.now()-timedelta(days=7)])            
 
-
 def role_required(required_role):
     def decorator(route_function):
         @functools.wraps(route_function)
@@ -123,16 +122,15 @@ def login():
 
     return render_template('login.html')
 
-
 @bp.route('/user', methods=('GET', 'POST'))
 @role_required([0, 1])
-def show_books():
+def user():
     pid = session['userid']
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM `category`")
     categories = cursor.fetchall()
     cursor.execute("SELECT school_id FROM users WHERE id_user = %s;", [pid])
-    school_id = cursor.fetchall()
+    school_id = cursor.fetchone()[0]
     name = session['name']
     if request.method == 'POST':
         if request.form.get('show books'):
@@ -149,6 +147,8 @@ def show_books():
             return redirect('user/delays')
         if request.form.get('show bookings'):
             return redirect('user/bookings')
+        if request.form.get('see authors'):
+            return redirect('my_school/authors')
         if request.form.get('search'):
            options = request.form.getlist('options[]')
            cat = False
@@ -172,7 +172,7 @@ def show_books():
            author = request.form['author']
            if author:
                 cur = mysql.connection.cursor()
-                cur.execute('''SELECT * FROM author WHERE name = %s;''', [author])
+                cur.execute('''SELECT * FROM author WHERE name=  %s;''', [author])
                 author = cur.fetchone()
                 if author:
                     author_id = author[0]
@@ -206,7 +206,7 @@ def show_books():
             title = request.form['title']
             cur = mysql.connection.cursor()
             cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
-                  WHERE b.title = %s AND bs.school_id = %s;''', [title, school_id])
+                  WHERE b.title LIKE '%{title}%' AND bs.school_id = {school_id};'''.format(title=title,school_id=school_id))
             book = cur.fetchall()
             cur.close()
             if book:
@@ -219,14 +219,30 @@ def show_books():
             if value == 'Details':
                 isbn = key
                 return redirect(url_for(".details", isbn=isbn))
-        #if request.form.get('details'):
-            #isbn = request.form.get('details')
-            #return redirect(url_for(".details",isbn=isbn))
-        
-
       
     if request.method == 'GET':
         return render_template('user.html', categories=categories, name = name)
+
+@bp.route('/my_school/authors', methods=('GET', 'POST'))
+@role_required([0, 1])
+def school_authors():
+    school_id = session['school_id']
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT a.author_id, a.name from author a INNER JOIN \
+        (SELECT ab.author_id FROM author_book ab INNER JOIN book_school bs ON ab.ISBN = bs.ISBN WHERE bs.school_id = %s) abs \
+            ON a.author_id = abs.author_id GROUP BY a.name''', [school_id])
+    authors = cur.fetchall()
+    cur.close()
+    if request.method == "GET":
+        return(render_template("authors.html", authors = authors))
+    if request.method == "POST":
+        for key,value in request.form.items():
+            if value=="See author's books":    
+                author_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN author_book ab ON b.ISBN=ab.ISBN WHERE author_id=%s''', [author_id])
+                books = cur.fetchall()
+                return render_template('search.html', books = books) 
 
 @bp.route('/user/bookings', methods=('GET', 'POST'))
 @role_required([0, 1])
@@ -481,7 +497,6 @@ def manager_books():
                 isbn = key
                 return redirect(url_for('auth.manager_book_details', isbn=isbn))
 
-
 @bp.route('/manager/books/details/<isbn>', methods=('GET', 'POST'))
 @role_required([2])
 def manager_book_details(isbn):
@@ -537,8 +552,6 @@ def manager_book_details(isbn):
 
         return render_template('manager_book_details.html', details = details, categories = categories, authors = authors, in_school = in_school, copies = copies) 
 
-
-
 @bp.route('/manager/pending_reviews', methods=('GET', 'POST'))
 @role_required([2])
 def pending_reviews():
@@ -582,9 +595,6 @@ def pending_reviews():
                 cur.close()
                 return redirect('/manager/pending_reviews')
 
-
-
-
 @bp.route('/manager/pending_registrations', methods=('GET', 'POST'))
 @role_required([2])
 def pending_registrations():
@@ -626,7 +636,6 @@ def pending_registrations():
             cur.close()
             return redirect(url_for('.passcard',id=new_id))
             
-
 @bp.route('/manager/pending_registrations/new_user_passcard<id>')
 @role_required([2])
 def passcard(id):
@@ -689,7 +698,6 @@ def pending_lendings():
             cur.close()
             return redirect('/manager/pending_lendings')
             
-
 @bp.route('/manager/active_lendings', methods=('GET', 'POST'))
 @role_required([2])
 def active_lendings():
@@ -888,7 +896,6 @@ def edit_user(user_id):
         return render_template('edit_user.html', name=name, role=role, username=username, birthday=birthday)
     if request.method == 'GET':
        return render_template('edit_user.html', name=name, role=role, username=username, birthday=birthday)
-    
 
 @bp.route('/details/<isbn>', methods=('GET', 'POST'))
 def details(isbn):
