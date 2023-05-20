@@ -42,7 +42,24 @@
     <br>
     <label for="role">Role: Teacher</label>
     {% endif %}
-   
+    {% if profile[5] == 3:%}
+    <h4>You can change your username, password, name and birthday.</h4>
+    <br>
+    <label for="username">Username:</label>
+    <input name="username" id="username" value="{{profile[2]}}" required>
+    <br>
+    <label for="password">Password:</label>
+    <input type='password' name="password" id="password" value="{{profile[3]}}" required>
+    <br>
+    <label for="name">Full Name:</label>
+    <input name="name" id="name" value="{{profile[1]}}" required>
+    <br>
+    <label for="birthday">Birthday:</label>
+    <input type="date" id="birthday" name="birthday" value="{{profile[6]}}"required>
+    <br>
+    <label for="role">Role: Admin</label>
+    {% endif %}
+
     </body>
     </select>
     {% for message in get_flashed_messages() %}

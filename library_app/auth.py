@@ -431,6 +431,8 @@ def admin_home():
             return redirect('/admin/pending_manager_registrations')
         if request.form.get('Add School'):
             return redirect('/admin/add_school')
+        if request.form.get('show profile'):
+            return redirect('admin/profile')
     if request.method == 'GET':
         return render_template('admin_home.html')
     
@@ -495,6 +497,42 @@ def add_school():
         flash('School added successfully!')
         return render_template('add_school.html')
     
+@bp.route('/admin/profile', methods=('GET', 'POST'))
+@role_required([3])
+def admin_profile():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users WHERE id_user = %s''', [session['userid']])
+    profile = cur.fetchone()
+    cur.close()
+    if request.method == 'POST':
+        if request.form.get('save changes'):
+            new_username = request.form['username']
+            new_password = request.form['password']
+            new_name = request.form['name']
+            new_birthday = request.form['birthday']
+            invalid_char = False
+            if len(new_username) > 15 or len(new_password) > 15:
+                invalid_char = True
+                flash('Up to 15 characters can be used for username and password')
+            special_characters = '''"'!@#$%^&*()-+?=,<>/'''
+            if not new_username.islower() or any(c in special_characters for c in new_username) :
+                invalid_char = True
+                flash('Username must contain only lowercase latin letters or _')
+            if not (new_name.isalpha() or ' ' in new_name):
+                invalid_char = True
+                flash('Only latin characters can be used for name')
+            if invalid_char:
+                return render_template('profile.html', profile = profile)
+            cur = mysql.connection.cursor()
+            cur.execute('''UPDATE users SET username = %s, password = %s, name = %s, birthday = %s WHERE id_user = %s''',\
+                            [new_username, new_password, new_name, new_birthday, session['userid']])
+            mysql.connection.commit()
+            flash('Your profile has been modified successfully.')
+            cur.close()
+            return redirect('/admin')
+    if request.method == 'GET':
+        return render_template('profile.html', profile = profile)
+
 @bp.route('/manager', methods=('GET', 'POST'))
 @role_required([2])
 def manager_home():
