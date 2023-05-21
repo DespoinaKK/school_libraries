@@ -753,28 +753,40 @@ def manager_book_details(isbn):
             isbn = request.form['isbn']
             authors = request.form['authors']
             publisher = request.form['publisher']
-            page_number = request.form['page_number']
+            page_number = request.form['page number']
             summary = request.form['summary']
             language = request.form['language']
             keywords = request.form['keywords']
             cur = mysql.connection.cursor()
             query = f"UPDATE books SET title='{title}', publisher='{publisher}', page_number={page_number}, summary='{summary}',\
-                  language='{language}', keywords={keywords}' WHERE ISBN='{isbn}';"
+                  book_language='{language}', keywords='{keywords}' WHERE ISBN='{isbn}';"
             cur.execute(query)
-            mysql.commit()
+            mysql.connection.commit()
             author_list=authors.split(',')
+            query =f"DELETE FROM author_book WHERE ISBN='{isbn}';"
+            cur.execute(query)
+            mysql.connection.commit()
             for author in author_list:
-                query =f"SELECT author_id FROM author WHERE name='{author}';"
-                cur.execute(query)
+                cur.execute("SELECT author_id FROM author WHERE name=%s;", [author])
                 author_id = cur.fetchall()
                 if author_id == ():
-                    query = f"INSERT INTO author (name) VALUES '{author}';"
+                    query = f"INSERT INTO author (name) VALUES ('{author}');"
                     cur.execute(query) 
-                    mysql.commit()
-            ###not finished
-
-
-        return render_template('manager_book_details.html', details = details, categories = categories, authors = authors, in_school = in_school, copies = copies) 
+                    mysql.connection.commit()
+                    query = f"SELECT author_id FROM author WHERE name='{author}';"
+                    cur.execute(query)
+                    author_id == cur.fetchone()
+                cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s);", [author_id, isbn])
+                mysql.connection.commit()
+            categories = request.form.getlist('options[]')  
+            query =f"DELETE FROM book_category WHERE ISBN='{isbn}';"
+            cur.execute(query)
+            mysql.connection.commit()
+            for category in categories:
+                query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({category}, '{isbn}');"
+                cur.execute(query)
+                mysql.connection.commit()
+            return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
 
 @bp.route('/manager/pending_reviews', methods=('GET', 'POST'))
 @role_required([2])

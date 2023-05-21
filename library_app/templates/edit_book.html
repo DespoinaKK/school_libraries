@@ -10,7 +10,7 @@
     <input name="title" id="title" value="{{details[0]}}" required>
     <br>
     <label for="isbn">ISBN:</label>
-    <input name="isbn" id="isbn" value="{{details[2]}}" required>
+    <input name="isbn" id="isbn" value="{{details[2]}}" readonly>
     <br>
     <label for="authors">Authors(seperate authors by comma(,)):</label>
     <input name="authors" id="authors" value="{% for author in authors %}{{author[0]}}{% if not loop.last %},{% endif %}{% endfor %}" required>
