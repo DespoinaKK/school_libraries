@@ -433,6 +433,14 @@ def admin_home():
             return redirect('/admin/add_school')
         if request.form.get('show profile'):
             return redirect('admin/profile')
+        if request.form.get('q1'):
+            return redirect('admin/q1')
+        if request.form.get('q2'):
+            return redirect('admin/q2')
+        if request.form.get('q3'):
+            return redirect('admin/q3')
+        if request.form.get('q4'):
+            return redirect('admin/q4')
     if request.method == 'GET':
         return render_template('admin_home.html')
     
@@ -532,6 +540,95 @@ def admin_profile():
             return redirect('/admin')
     if request.method == 'GET':
         return render_template('profile.html', profile = profile)
+
+@bp.route('/admin/q1', methods=('GET', 'POST'))
+@role_required([3])
+def q1():
+    if request.method == 'GET':
+        return render_template('q1.html')
+    
+    if request.method == 'POST':
+        month = request.form['month']
+        year = request.form['year']
+        cur = mysql.connection.cursor()
+        cur.execute('''SELECT s.name, count(*) as 'Number of lendings' from schools s INNER JOIN lending l ON s.school_id = l.school_id WHERE YEAR(l.borrow_date) = %s AND MONTH(l.borrow_date) = %s GROUP BY s.name ORDER BY count(*) DESC;''', [year, month])
+        results = list(cur.fetchall())
+        cur.close()
+        return render_template('q1.html', results=results)
+
+@bp.route('/admin/q2', methods=('GET', 'POST'))
+@role_required([3])
+def q2():
+    if request.method == 'GET':
+        cur = mysql.connection.cursor()
+        cur.execute('''SELECT name from category;''')
+        categories = list(cur.fetchall())
+        cur.close()
+        return render_template('q2.html', categories=categories)
+    
+    if request.method == 'POST':
+        category = request.form['categories']
+        cur = mysql.connection.cursor()
+        cur.execute('''SELECT DISTINCT a.name from author a 
+                    INNER JOIN author_book ab
+                    ON a.author_id=ab.author_id
+                    INNER JOIN books b
+                    ON ab.ISBN = b.ISBN 
+                    INNER JOIN book_category bc
+                    ON bc.ISBN = b.ISBN
+                    INNER JOIN category c
+                    ON c.category_id = bc.category_id WHERE c.name = %s;''', [category])
+        authors = list(cur.fetchall())
+        cur.execute('''SELECT DISTINCT u.name from users u
+                    INNER JOIN lending l
+                    ON l.id_user = u.id_user
+                    INNER JOIN books b
+                    ON l.ISBN = b.ISBN 
+                    INNER JOIN book_category bc
+                    ON bc.ISBN = b.ISBN
+                    INNER JOIN category c
+                    ON c.category_id = bc.category_id 
+                    WHERE c.name = %s AND u.role = 1 AND YEAR(l.borrow_date) = YEAR(CURDATE());''', [category])
+        teachers = list(cur.fetchall())
+        cur.execute('''SELECT name from category;''')
+        categories = list(cur.fetchall())
+        cur.close()
+        return render_template('q2.html', authors=authors, teachers=teachers, category=category, categories=categories)
+
+@bp.route('/admin/q3', methods=('GET', 'POST'))
+@role_required([3])
+def q3():
+    if request.method == 'GET':
+        cur = mysql.connection.cursor()
+        cur.execute('''SELECT u.name, count(*) from users u
+                    INNER JOIN lending l
+                    ON u.id_user = l.id_user WHERE (u.role = 1 or u.role = 2) and (u.birthday > '1983-01-01')
+                    GROUP BY u.name
+                    ORDER BY count(*) DESC;''')
+        results = list(cur.fetchall())
+        cur.close()
+        return render_template('q3.html', results=results)
+    
+    if request.method == 'POST':
+        return render_template('q3.html')
+
+@bp.route('/admin/q4', methods=('GET', 'POST'))
+@role_required([3])
+def q4():
+    if request.method == 'GET':
+        cur = mysql.connection.cursor()
+        cur.execute('''SELECT d.name from author d 
+                    WHERE d.author_id IN 
+                    (SELECT a.author_id FROM author a
+                    EXCEPT
+                    SELECT c.author_id FROM lending b INNER JOIN author_book c
+                    ON b.ISBN = c.ISBN);''')
+        results = list(cur.fetchall())
+        cur.close()
+        return render_template('q4.html', results=results)
+    
+    if request.method == 'POST':
+        return render_template('q4.html')
 
 @bp.route('/manager', methods=('GET', 'POST'))
 @role_required([2])

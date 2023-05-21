@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <title>3.1.4</title>
+    </head>
+    <h1>Show all authors with no lendings</h1>
+    {% for res in results: %}
+        <p><strong>Author Name:        </strong> {{res[0]}}</p>
+        <br>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+    {% endfor %}
+</html>

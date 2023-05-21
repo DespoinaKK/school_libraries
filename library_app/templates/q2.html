@@ -1,0 +1,35 @@
+<html>
+    <head>
+        <title>3.1.2</title>
+    </head>
+    <h1>For a specific category, show all authors in that category and the teachers that have borrowed books from that category in the last year</h1>
+    <form method="post">
+        <label for="categories">Choose a category:</label>
+        <select name="categories" id="categories">
+            <option></option>
+            {% for cat in categories: %}
+                <option value="{{cat[0]}}">{{cat[0]}}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <input type="submit" value="Show results">
+        <br>
+        <h2>Authors in category: {{category}}</h2>
+        {% for ath in authors: %}
+            <p><strong>Author Name:        </strong> {{ath[0]}}</p>
+            <br>
+            {% if not loop.last %}
+                <hr>
+            {% endif %}
+        {% endfor %}
+        <br>
+        <h2>Teachers that have borrowed from category: {{category}} the last year</h2>
+        {% for tea in teachers: %}
+            <p><strong>Teacher Name:        </strong> {{tea[0]}}</p>
+            <br>
+            {% if not loop.last %}
+                <hr>
+            {% endif %}
+        {% endfor %}
+    </form>
+</html>

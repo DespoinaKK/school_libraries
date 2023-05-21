@@ -1,0 +1,23 @@
+<html>
+    <head>
+        <title>3.1.1</title>
+    </head>
+    <h1>Show all lendings per school in selected month and year</h1>
+    <form method="post">
+        <label for="month">Month:</label>
+        <input type="number" name="month" id="month" required>
+        <br>
+        <label for="year">Year:</label>
+        <input type="number" name="year" id="year" required>
+        <br>
+        <input type="submit" value="Show results">
+        {% for res in results: %}
+            <p><strong>School Name:        </strong> {{res[0]}}</p>
+            <p><strong>Number of lendings:    </strong> {{res[1]}}</p>
+            <br>
+            {% if not loop.last %}
+                <hr>
+            {% endif %}
+        {% endfor %}
+    </form>
+</html>
