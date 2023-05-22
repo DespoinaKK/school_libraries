@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <title>3.1.7</title>
+    </head>
+    <h1>Show all authors that have written at least 5 books less than the author of the most books</h1>
+    {% for res in results: %}
+        <p><strong>Author Name:        </strong> {{res[0]}}</p>
+        <br>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+    {% endfor %}
+</html>

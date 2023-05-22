@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <title>3.1.6</title>
+    </head>
+    <h1>Show top 3 couples of categories that show up in lendings</h1>
+    {% for i in range(3): %}
+        <p><strong>Couple of categories #{{i+1}}:        </strong> {{results[i][0]}}-{{results[i][1]}}</p>
+        <br>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+    {% endfor %}
+</html>

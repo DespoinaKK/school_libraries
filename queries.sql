@@ -48,7 +48,7 @@ INNER JOIN category c
 ON c.category_id = bc.category_id 
 WHERE c.name = 'Travel' AND u.role = 1 AND YEAR(l.borrow_date) = YEAR(CURDATE())
 
--- 3.1.5
+-- 3.1.5 OK 
 -- Returns name of school manager and total number of lendings
 SELECT u.name, tt.count FROM users u
 INNER JOIN (
@@ -62,7 +62,7 @@ WHERE u.role = 2 AND tt.count > 2
 GROUP BY u.name
 ORDER BY tt.count;
 
--- 3.1.6
+-- 3.1.6 OK 
 -- Returns top 3 couples of categories that show up in lendings
 SELECT c1.name as 'Category 1', c2.name as 'Category 2', cat_ids.cnt FROM (category c1, category c2)
 INNER JOIN
@@ -81,7 +81,7 @@ INNER JOIN
     ORDER BY count(*) DESC) cat_ids
 ON c1.category_id = cat_ids.ct1 AND c2.category_id = cat_ids.ct2
 
--- 3.1.7
+-- 3.1.7 OK
 -- Returns the authors that have written at least 5 books less than the author of the most books
 SELECT a.name, a_with_less_books.cnt FROM author a
 INNER JOIN
