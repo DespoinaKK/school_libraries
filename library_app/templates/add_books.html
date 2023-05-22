@@ -1,0 +1,51 @@
+<html>
+    <head><title>Add Books</title></head>
+    <body>
+        <h2>Add New Books</h2>
+        <form method="POST">
+            <label for="isbn"><strong>ISBN:</strong></label>
+            <input name="isbn" id="isbn">
+            <label for="copies"><strong>Copies Added:</strong></label>
+            <input type="number" min="1" name="copies" id="copies">
+            <input type="submit" name="Add Book" value="Add Book">
+            <hr>
+        {%if exists==1 %}
+        <p>Book does not exist in database. Please provide details and insert ISBN and copies again.</p>
+            <label for="title"><strong>Title:</strong></label>
+            <input name="title" id="title"  required>
+            <br>
+            <label for="authors"><strong>Authors(seperate authors by comma(,)):</strong></label>
+            <input name="authors" id="authors" required>
+            <br>
+            <label for="publisher"><strong>Publisher:</strong></label>
+            <input type="publisher" id="publisher" name="publisher" required>
+            <br>
+            <label for="page Number"><strong>Page Number:</strong></label>
+            <input type="page number" id="page number" name="page number" required>
+            <br>
+            <label for="summary"><strong>Summary:</strong></label>
+            <input type="summary" id="summary" name="summary" required>
+            <br>
+            <label for="language"><strong>Language:</strong></label>
+            <input type="language" id="language" name="language" required>
+            <br>
+            <label for="keywords"><strong>Keywords:</strong></label>
+            <input type="keywords" id="keywords" name="keywords" required>
+            <br>
+            <p><strong>Categories:</strong></p>
+            {% for category in categories %}
+            <label>
+                <input type="checkbox" name="options[]" value="{{ category[0] }}">
+                {{ category[1] }}
+            </label>
+            {% endfor %}
+            <br>
+            <br>
+            <input type="submit" name="Save" value="Save">
+          </form>
+        {%endif%}
+        {% for message in get_flashed_messages() %}
+        <div class="flash">{{ message }}</div>
+        {% endfor %}
+    </body>
+</html>

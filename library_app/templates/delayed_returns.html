@@ -1,0 +1,35 @@
+<html>
+   <head><title>Delayed Returns</title></head>
+   <h2>Delayed Returns</h2>
+   <hr>
+   <form method="POST">
+    <h3>Search Delayed Returns
+    </h3>
+    <label for="name"><strong>Search by Name:</strong></label>
+    <input name="name" id="name">
+    <input type="submit" name="Search Name" value="Search">
+    <label for="days"><strong>Search by days of delay:</strong></label>
+    <input type="number" min="1" name="days" id="days">
+    <input type="submit" name="Search Days" value="Search">
+    </form>
+   {% for message in get_flashed_messages() %}
+   <div class="flash">{{ message }}</div>
+   {% endfor %}
+   {% if searched==0 %}
+   <h3>See All Delayed Returns</h3>
+   {% elif searched==1 %}
+   <h3>Search Results</h3>
+   {% endif %}
+   <hr>
+   {% for detail in details%}
+   <p><strong>Name: </strong>{{ detail[1]}}</p>
+   <p><strong>User_id: </strong>{{ detail[0]}}</p>
+   <p><strong>Title: </strong>{{ detail[2]}}</p>
+   <p><strong>ISBN: </strong>{{ detail[3]}}</p>
+   <p><strong>Borrow Date: </strong>{{ detail[4]}}</p>
+{% if not loop.last %}
+   <hr>
+{% endif %}
+{% endfor %}
+
+</html>

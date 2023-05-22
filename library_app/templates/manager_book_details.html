@@ -23,14 +23,7 @@
             {% endfor %}
         </p>
         {% if in_school==1 %}
-        {%if copies[0][0] != 0 %}
         <p><strong>Copies Available: </strong>{{copies[0][0]}}</p>
-        <form method="post">
-            <input type="submit" name = "Lend Book" value="Lend Book">
-        </form>
-        {%else%}
-        <p>There are no copies of this book left at the moment. Lending is not possible.</p>
-        {%endif%}
         {%endif%}
         {% if in_school==0 %}
         <p>This book does not exist in your school!</p>
@@ -39,6 +32,19 @@
             <input type="submit" name = "Edit Book Info" value="Edit Book Info">
             <input type="submit" name = "Show Reviews" value="Show Reviews">
         </form>
+        {% if in_school==1 %}
+        {%if copies[0][0] != 0 %}
+        <hr>
+        <h3>Lend book to user</h3>
+        <form method="post">
+            <label for="user"><strong>Search Username:</strong></label>
+            <input name="username" id="username">
+            <input type="submit" name = "Lend Book" value="Lend Book">
+        </form>
+        {%else%}
+        <p>There are no copies of this book left at the moment. Lending is not possible.</p>
+        {%endif%}
+        {%endif%}
         {% for mesg in get_flashed_messages() %}
             <p>{{ mesg }}</p>
             {% endfor %}

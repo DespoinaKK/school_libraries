@@ -764,8 +764,134 @@ def manager_home():
             return redirect('/manager/pending_reviews')
         if request.form.get('Search Books'):
             return redirect('/manager/books')
+        if request.form.get('Add Books'):
+            return redirect('/manager/add_books')
+        if request.form.get('Delayed Returns'):
+            return redirect('/manager/delayed_returns')
     if request.method == 'GET':
         return render_template('manager_home.html', name=session['name'])
+    
+
+@bp.route('/manager/delayed_returns', methods=('GET', 'POST'))
+@role_required([2])
+def delayed_returns():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT l.id_user, u.name, b.title, b.ISBN, l.borrow_date FROM lending l INNER JOIN users u ON l.id_user = u.id_user \
+                INNER JOIN books b ON l.ISBN=b.ISBN WHERE l.school_id=%s AND l.borrow_date<%s AND l.return_date is NULL", [session['school_id'],datetime.now().date()-timedelta(days=7)])
+    details = cur.fetchall()
+    cur.close()
+    if request.method == 'GET':
+        return render_template('delayed_returns.html', details = details, searched = 0)
+    if request.method == 'POST':
+        #delayed returns by name
+        if request.form.get('Search Name'):
+            name = request.form['name']
+            cur = mysql.connection.cursor()
+            cur.execute('SELECT id_user FROM users WHERE name=%s AND school_id=%s', [name, session['school_id']])
+            user_id = cur.fetchone()
+            cur.close()
+            if user_id is None:
+                flash('User does not exist. Try again!')
+                return redirect('/manager/delayed_returns')
+            else:
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT l.id_user, u.name, b.title, b.ISBN, l.borrow_date FROM lending l INNER JOIN users u ON l.id_user = u.id_user \
+                    INNER JOIN books b ON l.ISBN=b.ISBN WHERE l.id_user=%s AND l.borrow_date<%s AND l.return_date is NULL", [user_id ,datetime.now().date()-timedelta(days=7)])
+                details = cur.fetchall()
+                cur.close()
+            return render_template('delayed_returns.html', details = details, searched = 1)
+        #delayed returns by days of delay
+        if request.form.get('Search Days'):
+                del_days = int(request.form['days'])
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT l.id_user, u.name, b.title, b.ISBN, l.borrow_date FROM lending l INNER JOIN users u ON l.id_user = u.id_user \
+                    INNER JOIN books b ON l.ISBN=b.ISBN WHERE l.school_id=%s AND l.borrow_date=%s AND l.return_date is NULL", [session['school_id'],datetime.now().date()-timedelta(days=7)-timedelta(days=del_days)])
+                details = cur.fetchall()
+                cur.close()
+                return render_template('delayed_returns.html', details = details, searched = 1)
+        
+    
+@bp.route('/manager/add_books', methods=('GET', 'POST'))
+@role_required([2])
+def add_books():
+    if request.method == 'GET':
+        return render_template('add_books.html', exists=0)
+    
+    if request.method == 'POST':
+        
+        if request.form.get('Add Book'):
+            isbn = request.form['isbn']
+            if len(isbn)<10:
+                flash('Invalid ISBN.')
+                return redirect('/manager/add_books')
+            copies = request.form['copies']
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT * FROM book_school WHERE ISBN=%s AND school_id=%s''', [isbn, session['school_id']])
+            dets = cur.fetchall()
+            cur.close()
+            
+            #add copies to existing book in school
+            if dets != ():
+                cur = mysql.connection.cursor()
+                cur.execute('UPDATE book_school SET copies_available = copies_available+%s WHERE ISBN=%s AND school_id=%s', [copies, isbn, session['school_id']])
+                mysql.connection.commit()
+                cur.close()
+                flash('Book already existed in school. Copies updated successfully!')
+                return redirect('/manager/add_books')
+            else:
+                #add new book to school that exists in database
+                cur = mysql.connection.cursor()
+                cur.execute("SELECT * FROM books WHERE ISBN=%s", [isbn])
+                dets = cur.fetchall()
+                if dets != ():
+                    cur.execute("INSERT INTO book_school (ISBN, school_id, copies_available) VALUES (%s, %s, %s)",[isbn, session['school_id'], copies])
+                    mysql.connection.commit()
+                    flash('Book exists in database and it was added successfully!')
+                    return redirect('manager/add_books')
+                cur.execute("SELECT category_id, name FROM category")
+                categories = cur.fetchall()
+                return render_template('add_books.html', exists=1, categories=categories)
+        
+        #add new book in database
+        if request.form.get('Save'):
+            title = request.form['title']
+            isbn = request.form['isbn']
+            copies = request.form['copies']
+            authors = request.form['authors']
+            publisher = request.form['publisher']
+            page_number = request.form['page number']
+            summary = request.form['summary']
+            language = request.form['language']
+            keywords = request.form['keywords']
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO books (ISBN, title, publisher, page_number, summary, book_language, keywords) \
+                         VALUES (%s, %s, %s, %s, %s, %s, %s)", [isbn, title, publisher, page_number, summary, language, keywords])
+            mysql.connection.commit()
+            author_list=authors.split(',')
+            for author in author_list:
+                cur.execute("SELECT author_id FROM author WHERE name=%s;", [author])
+                author_id = cur.fetchall()
+                if author_id == ():
+                    query = f"INSERT INTO author (name) VALUES ('{author}');"
+                    cur.execute(query) 
+                    mysql.connection.commit()
+                    query = f"SELECT author_id FROM author WHERE name='{author}';"
+                    cur.execute(query)
+                    author_id == cur.fetchone()
+                cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s);", [author_id, isbn])
+                mysql.connection.commit()
+            categories = request.form.getlist('options[]')  
+            for category in categories:
+                query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({category}, '{isbn}');"
+                cur.execute(query)
+                mysql.connection.commit()
+            cur.execute("INSERT INTO book_school (ISBN, school_id, copies_available) VALUES (%s, %s, %s)",[isbn, session['school_id'], copies])
+            mysql.connection.commit()
+                
+            flash('Book added successfully!')
+            return redirect('/manager/add_books')
+
+
     
 @bp.route('/manager/books', methods=('GET', 'POST'))
 @role_required([2])
@@ -904,6 +1030,56 @@ def manager_book_details(isbn):
                 cur.execute(query)
                 mysql.connection.commit()
             return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+
+        if request.form.get('Lend Book'):
+            username = request.form['username']
+            cur = mysql.connection.cursor()
+            #check if user exists
+            cur.execute('SELECT id_user,role FROM users WHERE username=%s AND school_id=%s', [username, session['school_id']])
+            dets = cur.fetchone()
+            cur.close()
+            if dets is None:
+                flash("User not found. Try again!")
+                return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+            user_id = dets[0]
+            role = dets[1]
+            #check if copies available more than active bookings
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT count(*) FROM booking WHERE school_id=%s AND ISBN=%s", [session['school_id'], isbn])
+            act_reservs = cur.fetchone()
+            cur.execute('SELECT copies_available FROM book_school WHERE school_id=%s AND ISBN=%s', [session['school_id'], isbn])
+            copies = cur.fetchone()
+            cur.close()
+            if act_reservs >= copies:
+                flash('There are active reservations for this book, not enough copies!')
+                return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+            #check if user has delayed returns
+            cur = mysql.connection.cursor()
+            cur.execute('SELECT count(*) FROM lending WHERE return_date is NULL AND borrow_date<%s AND id_user=%s', [datetime.now().date()-timedelta(days=7), user_id])
+            delays = cur.fetchone()
+            cur.close()
+            if delays[0]>0:
+                flash("User has not returned their books in time, lending is not possible. Try again after books have been returned!")
+                return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+            #check if user has reached limit for the week
+            cur = mysql.connection.cursor()
+            cur.execute('SELECT count(*) FROM lending WHERE borrow_date>%s AND id_user=%s', [datetime.now().date()-timedelta(days=7), user_id])
+            books_borrowed = cur.fetchone()
+            cur.close()
+            if role+books_borrowed[0] >=2:
+                flash('User has reached their limit for the week. Try again in a few days!')
+                return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+            #if everything ok insert into lendings
+            cur = mysql.connection.cursor()
+            cur.execute('''INSERT INTO lending (borrow_date, id_user, ISBN, school_id) \
+                    VALUES ('{borrow_date}', {id_user}, '{ISBN}', {school_id});'''.format(borrow_date=date.today(),\
+                             id_user=user_id, ISBN=isbn,school_id=session['school_id']))
+            mysql.connection.commit()
+            cur.close()
+            flash('Lending was registered successfully!')
+            return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+
+
 
 @bp.route('/manager/pending_reviews', methods=('GET', 'POST'))
 @role_required([2])
