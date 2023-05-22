@@ -195,6 +195,11 @@ def user():
             return redirect('user/bookings')
         if request.form.get('see authors'):
             return redirect('my_school/authors')
+        if request.form.get('show all books'):
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT b.ISBN,b.title FROM books b INNER JOIN book_school bs WHERE bs.school_id=%s''', [school_id])
+            books = cur.fetchall()
+            return render_template('all_books.html', books=books)
         if request.form.get('search'):
            options = request.form.getlist('options[]')
            cat = False
@@ -351,7 +356,7 @@ def my_reviews():
         isbn.append(review[3])
         cur.execute('''SELECT title FROM books WHERE ISBN=%s''', [review[3]])
         title.append(cur.fetchone())
-    cur.execute('''SELECT review_id, star_review, review_text, ISBN FROM reviews WHERE id_user = %s''', [session['userid']])
+    cur.execute('''SELECT review_id, star_review, review_text, ISBN FROM pending_reviews WHERE id_user = %s''', [session['userid']])
     pending_reviews = list(cur.fetchall())
     pending_title = []
     pending_isbn = []
@@ -388,12 +393,22 @@ def profile():
                     flash('Username must contain only lowercase latin letters or _')
                 if invalid_char:
                     return render_template('profile.html', profile = profile)
-                cur = mysql.connection.cursor()
-                cur.execute('''UPDATE users SET username = %s, password = %s WHERE id_user = %s''', [new_username, new_password, session['userid']])
-                flash('Your profile has been modified successfully.')
-                mysql.connection.commit()
-                cur.close()
-                return redirect('/user')
+                cur_username = mysql.connection.cursor()
+                cur_username.execute('''(SELECT id_user FROM users WHERE username = %s) \
+                UNION (SELECT id_user FROM users_unregistered WHERE username = %s);''',\
+                                  [new_username,new_username])
+                exists = cur_username.fetchall()
+                cur_username.close()
+                if exists:
+                    flash('This username is already being used. Choose a different one')
+                    return render_template('profile.html', profile = profile)
+                else:
+                    cur = mysql.connection.cursor()
+                    cur.execute('''UPDATE users SET username = %s, password = %s WHERE id_user = %s''', [new_username, new_password, session['userid']])
+                    flash('Your profile has been modified successfully.')
+                    mysql.connection.commit()
+                    cur.close()
+                    return redirect('/user')
             elif profile[5] == 1:
                 #teacher
                 new_username = request.form['username']
@@ -413,13 +428,23 @@ def profile():
                     flash('Only latin characters can be used for name')
                 if invalid_char:
                     return render_template('profile.html', profile = profile)
-                cur = mysql.connection.cursor()
-                cur.execute('''UPDATE users SET username = %s, password = %s, name = %s, birthday = %s WHERE id_user = %s''',\
+                cur_username = mysql.connection.cursor()
+                cur_username.execute('''(SELECT id_user FROM users WHERE username = %s) \
+                UNION (SELECT id_user FROM users_unregistered WHERE username = %s);''',\
+                                  [new_username,new_username])
+                exists = cur_username.fetchall()
+                cur_username.close()
+                if exists:
+                    flash('This username is already being used. Choose a different one')
+                    return render_template('profile.html', profile = profile)
+                else:
+                    cur = mysql.connection.cursor()
+                    cur.execute('''UPDATE users SET username = %s, password = %s, name = %s, birthday = %s WHERE id_user = %s''',\
                              [new_username, new_password, new_name, new_birthday, session['userid']])
-                mysql.connection.commit()
-                flash('Your profile has been modified successfully.')
-                cur.close()
-                return redirect('/user')
+                    mysql.connection.commit()
+                    flash('Your profile has been modified successfully.')
+                    cur.close()
+                    return redirect('/user')
     if request.method == 'GET':
         return render_template('profile.html', profile = profile)
 
@@ -537,13 +562,23 @@ def admin_profile():
                 flash('Only latin characters can be used for name')
             if invalid_char:
                 return render_template('profile.html', profile = profile)
-            cur = mysql.connection.cursor()
-            cur.execute('''UPDATE users SET username = %s, password = %s, name = %s, birthday = %s WHERE id_user = %s''',\
+            cur_username = mysql.connection.cursor()
+            cur_username.execute('''(SELECT id_user FROM users WHERE username = %s) \
+                UNION (SELECT id_user FROM users_unregistered WHERE username = %s);''',\
+                                  [new_username,new_username])
+            exists = cur_username.fetchall()
+            cur_username.close()
+            if exists:
+                flash('This username is already being used. Choose a different one')
+                return render_template('profile.html', profile = profile)
+            else:
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE users SET username = %s, password = %s, name = %s, birthday = %s WHERE id_user = %s''',\
                             [new_username, new_password, new_name, new_birthday, session['userid']])
-            mysql.connection.commit()
-            flash('Your profile has been modified successfully.')
-            cur.close()
-            return redirect('/admin')
+                mysql.connection.commit()
+                flash('Your profile has been modified successfully.')
+                cur.close()
+                return redirect('/admin')
     if request.method == 'GET':
         return render_template('profile.html', profile = profile)
 

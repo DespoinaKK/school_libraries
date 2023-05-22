@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <title>All books</title>
+    </head>
+    <body>
+        <h1>All School Library books</h1>
+        {% block content %}
+        {% for book in books: %}
+            <h2>{{ book[1] }}</h2>
+            <p>Press for more details</p>
+            <form method="post">
+                <input type="submit" name = "{{book[0]}}" value="Details">
+            </form>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+  {% endfor %}
+{% endblock %}
+
+    </body>
+</html>
