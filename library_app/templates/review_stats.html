@@ -1,0 +1,39 @@
+<html>
+    <head><title>Statistics of Reviews</title></head>
+    <h1>Search Review Average</h1>
+    <hr>
+    <body>
+        <form method="POST">
+            <label for="user"><strong>Search by Username:</strong></label>
+            <input name="user" id="user">
+            <br>
+            <p><strong>Search by category:</strong></p>
+            <label for="categories">Choose a category:</label>
+            <select name="categories" id="categories">
+                <option></option>
+                {% for category in categories: %}
+                    <option value="{{category[0]}}">{{category[1]}}</option>
+                {% endfor %}
+            </select>
+            <br>
+            <br>
+            <p>You can choose category, user or both.</p>
+            <input type="submit" name="search" value="Search">
+        </form>
+        {% for message in get_flashed_messages() %}
+        <div class="flash">{{ message }}</div>
+        {% endfor %}
+        {% if search==1 %}
+        <hr>
+        <p><strong>Average Star Review of {{ name }}: </strong>{{average}}/5</p>
+        {%endif%}
+        {% if search==2 %}
+        <hr>
+        <p><strong>Average Star Review of category {{ cat_name }}: </strong>{{average}}/5</p>
+        {%endif%}
+        {% if search==3 %}
+        <hr>
+        <p><strong>Average Star Review of user {{ name }} in category {{ cat_name }}: </strong>{{average}}/5</p>
+        {%endif%}
+    </body>
+</html>

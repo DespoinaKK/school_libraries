@@ -768,10 +768,81 @@ def manager_home():
             return redirect('/manager/add_books')
         if request.form.get('Delayed Returns'):
             return redirect('/manager/delayed_returns')
+        if request.form.get('Statistics of Reviews'):
+            return redirect('/manager/review_stats')
     if request.method == 'GET':
         return render_template('manager_home.html', name=session['name'])
     
 
+@bp.route('/manager/review_stats', methods=('GET', 'POST'))
+@role_required([2])
+def review_stats():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT category_id, name FROM category''')
+    categories = cur.fetchall()
+    cur.close()
+    if request.method == 'GET':
+        return render_template('review_stats.html', categories=categories, search=0)
+    
+    if request.method == 'POST':
+        if request.form.get('search'):
+           category = request.form.get('categories')
+           #no category was chosen
+           if category=='':
+                username = request.form['user']
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT id_user FROM users WHERE username=  %s;''', [username])
+                user_id = cur.fetchone()
+                cur.close()
+                #no correct user
+                if user_id is None:
+                    flash('User not found. Try again!')
+                    return render_template('review_stats.html', categories=categories)
+                #user chosen not category
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT AVG(star_review) FROM reviews WHERE id_user=%s''', [user_id])
+                average = cur.fetchone()[0]
+                if average is None:
+                    average = '-'
+                return render_template('review_stats.html', categories=categories, average=average, search=1, name=username)
+           #category chosen
+           else:
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT name FROM category WHERE category_id=%s''', [category])
+                cat_name = cur.fetchone()[0]
+                cur.close
+                username = request.form['user']
+                #user not chosen
+                if username=='':
+                    cur = mysql.connection.cursor()
+                    cur.execute('''SELECT AVG(r.star_review) FROM reviews r INNER JOIN book_category bc ON r.ISBN=bc.ISBN \
+                        WHERE bc.category_id=%s''', [category])
+                    average = cur.fetchone()[0]
+                    cur.close()
+                    if average is None:
+                        average = '-'
+                    return render_template('review_stats.html', categories=categories, average=average, search=2, cat_name=cat_name)
+                else:
+                    cur = mysql.connection.cursor()
+                    cur.execute('''SELECT id_user FROM users WHERE username=  %s;''', [username])
+                    user_id = cur.fetchone()
+                    cur.close()
+                    #no correct user
+                    if user_id is None:
+                        flash('User not found. Try again!')
+                        return render_template('review_stats.html', categories=categories)
+                    #user and category chosen
+                    cur = mysql.connection.cursor()
+                    cur.execute('''SELECT AVG(r.star_review) FROM reviews r INNER JOIN book_category bc ON r.ISBN=bc.ISBN \
+                        WHERE bc.category_id=%s AND r.id_user=%s''', [category, user_id])
+                    average = cur.fetchone()[0]
+                    cur.close()
+                    if average is None:
+                        average = '-'
+                    return render_template('review_stats.html', categories=categories, average=average, search=3, cat_name=cat_name, name=username)
+                
+
+           
 @bp.route('/manager/delayed_returns', methods=('GET', 'POST'))
 @role_required([2])
 def delayed_returns():
@@ -1078,7 +1149,7 @@ def manager_book_details(isbn):
             cur.close()
             flash('Lending was registered successfully!')
             return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
-
+        
 
 
 @bp.route('/manager/pending_reviews', methods=('GET', 'POST'))
@@ -1383,10 +1454,10 @@ def active_users():
                 cur = mysql.connection.cursor()
                 cur.execute('''SELECT b.title, b.ISBN, r.review_text, r.star_review FROM reviews r INNER JOIN books b ON b.ISBN = r.ISBN WHERE id_user=%s;''', [user_id])
                 reviews = cur.fetchall()
-                sum = 0
-                for review in reviews:  #find average star review of user
-                    sum += review[3]
-                average_star_review = sum/len(review)
+                cur.execute('''SELECT AVG(r.star_review) FROM reviews r INNER JOIN books b ON b.ISBN = r.ISBN WHERE id_user=%s;''', [user_id])
+                average_star_review = cur.fetchone()[0]
+                if average_star_review is None:
+                    average_star_review = '-'
                 cur.execute('''SELECT username FROM users WHERE id_user=%s''', [user_id])
                 username = cur.fetchone()[0]
                 cur.close()
