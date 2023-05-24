@@ -908,7 +908,7 @@ def add_books():
                 mysql.connection.commit()
                 cur.close()
                 flash('Book already existed in school. Copies updated successfully!')
-                return redirect('/manager/add_books')
+                return redirect('manager/add_books')
             else:
                 #add new book to school that exists in database
                 cur = mysql.connection.cursor()
@@ -948,7 +948,7 @@ def add_books():
                     mysql.connection.commit()
                     query = f"SELECT author_id FROM author WHERE name='{author}';"
                     cur.execute(query)
-                    author_id == cur.fetchone()
+                    author_id == cur.fetchone()[0]
                 cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s);", [author_id, isbn])
                 mysql.connection.commit()
             categories = request.form.getlist('options[]')  
