@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <title>{{title}} Reviews</title>
+    </head>
+    <body>
+        <h1>{{title}} Reviews</h1>
+        {% for review in reviews: %}
+            <p>@{{ review[0] }}</p>
+            <p><strong>Star Review:</strong> {{review[1]}}/5</p>
+            <p><strong>Review:</strong> {{review[2]}}</p>
+            <hr>
+        {% if not loop.last %}
+            <hr>
+        {% endif %}
+        {% endfor %}
+        {% for mesg in get_flashed_messages() %}
+        <p>{{ mesg }}</p>
+        {% endfor %}
+    </body>
+</html>

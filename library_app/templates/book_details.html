@@ -26,6 +26,7 @@
         <form method="post">
             <input type="submit" name = "details" value="Borrow">
             <input type="submit" name = "review" value="Review">
+            <input type="submit" name = "show reviews" value="Show Reviews">
         </form>
         {% for mesg in get_flashed_messages() %}
             <p>{{ mesg }}</p>

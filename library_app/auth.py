@@ -471,7 +471,7 @@ def admin_home():
         if request.form.get('q7'):
             return redirect('admin/q7')
     if request.method == 'GET':
-        return render_template('admin_home.html')
+        return render_template('admin_home.html', name=session['name'])
     
 @bp.route('/admin/pending_manager_registrations', methods=('GET', 'POST'))
 @role_required([3])
@@ -1104,6 +1104,14 @@ def manager_book_details(isbn):
     if request.method == 'GET':
         return render_template('manager_book_details.html', details = details, categories = categories, authors = authors, in_school = in_school, copies = copies, path = path) 
     if request.method == 'POST':
+        if request.form.get('Show Reviews'):
+            curs = mysql.connection.cursor()
+            curs.execute('''SELECT u.username, r.star_review, r.review_text\
+                  FROM reviews r INNER JOIN users u ON r.id_user = u.id_user WHERE ISBN = %s''', [isbn])
+            reviews = curs.fetchall()
+            curs.close()
+            return render_template("book_reviews.html", reviews=reviews, title = details[0])
+
         if request.form.get('Edit Book Info'):
             cur = mysql.connection.cursor()
             cur.execute('''SELECT category_id, name FROM category''')
@@ -1159,12 +1167,6 @@ def manager_book_details(isbn):
                 mysql.connection.commit()
                 cur.close()
             return redirect(url_for('auth.manager_book_details', isbn=isbn))
-
-
-            
-            
-             
-        
 
 
         if request.form.get('Lend Book'):
@@ -1620,4 +1622,11 @@ def details(isbn):
             curs.close()
             flash("Your Review was submitted for approval")
             return render_template('book_details.html', details = details, categories = categories, authors = authors, path = path)
-            
+        
+        if request.form.get('show reviews'):
+            curs = mysql.connection.cursor()
+            curs.execute('''SELECT u.username, r.star_review, r.review_text\
+                  FROM reviews r INNER JOIN users u ON r.id_user = u.id_user WHERE ISBN = %s''', [isbn])
+            reviews = curs.fetchall()
+            curs.close()
+            return render_template("book_reviews.html", reviews=reviews, title = details[0])
