@@ -771,9 +771,56 @@ def manager_home():
             return redirect('/manager/delayed_returns')
         if request.form.get('Statistics of Reviews'):
             return redirect('/manager/review_stats')
+        if request.form.get('show profile'):
+            return redirect('manager/profile')
     if request.method == 'GET':
         return render_template('manager_home.html', name=session['name'])
-    
+
+@bp.route('/manager/profile', methods=('GET', 'POST'))
+@role_required([2])
+def manager_profile():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM users WHERE id_user = %s''', [session['userid']])
+    profile = cur.fetchone()
+    cur.close()
+    if request.method == 'POST':
+        if request.form.get('save changes'):
+            new_username = request.form['username']
+            new_password = request.form['password']
+            new_name = request.form['name']
+            new_birthday = request.form['birthday']
+            invalid_char = False
+            if len(new_username) > 15 or len(new_password) > 15:
+                invalid_char = True
+                flash('Up to 15 characters can be used for username and password')
+            special_characters = '''"'!@#$%^&*()-+?=,<>/'''
+            if not new_username.islower() or any(c in special_characters for c in new_username) :
+                invalid_char = True
+                flash('Username must contain only lowercase latin letters or _')
+            if not (new_name.isalpha() or ' ' in new_name):
+                invalid_char = True
+                flash('Only latin characters can be used for name')
+            if invalid_char:
+                return render_template('profile.html', profile = profile)
+            cur_username = mysql.connection.cursor()
+            cur_username.execute('''(SELECT id_user FROM users WHERE username = %s) \
+                UNION (SELECT id_user FROM users_unregistered WHERE username = %s);''',\
+                                  [new_username,new_username])
+            exists = cur_username.fetchall()
+            cur_username.close()
+            if exists:
+                flash('This username is already being used. Choose a different one')
+                return render_template('profile.html', profile = profile)
+            else:
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE users SET username = %s, password = %s, name = %s, birthday = %s WHERE id_user = %s''',\
+                            [new_username, new_password, new_name, new_birthday, session['userid']])
+                mysql.connection.commit()
+                flash('Your profile has been modified successfully.')
+                cur.close()
+                return redirect('/manager')
+    if request.method == 'GET':
+        return render_template('profile.html', profile = profile)
 
 @bp.route('/manager/review_stats', methods=('GET', 'POST'))
 @role_required([2])
