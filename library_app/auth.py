@@ -479,7 +479,7 @@ def admin_home():
 @role_required([3])
 def pending_manager_registrations():
     cur = mysql.connection.cursor()
-    cur.execute('''SELECT * FROM managers_unregistered''')
+    cur.execute('''SELECT m.name, m.username, m.birthday, s.name FROM managers_unregistered m INNER JOIN schools s ON m.school_id=s.school_id''')
     applications = list(cur.fetchall())
     cur.close()
     if request.method == 'GET':

@@ -5,11 +5,11 @@
     <body>
         <h1>Pending Manager Registrations</h1>
         {% for app in applications: %}
-            <h2>Manager's Information (Application #{{app[0]}})</h2>
-            <p><strong>Name:        </strong> {{app[1]}}</p>
-            <p><strong>Username:    </strong> {{app[2]}}</p>
-            <p><strong>Birthday     :</strong> {{app[6]}}</p>
-            <p><strong>School     : </strong> {{app[4]}}</p>
+            <h2>Manager's Information</h2>
+            <p><strong>Name:        </strong> {{app[0]}}</p>
+            <p><strong>Username:    </strong> {{app[1]}}</p>
+            <p><strong>Birthday     :</strong> {{app[2]}}</p>
+            <p><strong>School     : </strong> {{app[3]}}</p>
             <br>
             <form method="post">
                 <input type="submit" name = "Reject" value="Reject #{{app[0]}}">
