@@ -379,7 +379,6 @@ def profile():
     if request.method == 'POST':
         if request.form.get('save changes'):
             if profile[5] == 0:
-                flash("student")
                 #student
                 new_username = request.form['username']
                 new_password = request.form['password']
@@ -399,7 +398,7 @@ def profile():
                                   [new_username,new_username])
                 exists = cur_username.fetchall()
                 cur_username.close()
-                if exists:
+                if new_username!=profile[2] and exists:
                     flash('This username is already being used. Choose a different one')
                     return render_template('profile.html', profile = profile)
                 else:
@@ -434,7 +433,7 @@ def profile():
                                   [new_username,new_username])
                 exists = cur_username.fetchall()
                 cur_username.close()
-                if exists:
+                if new_username!=profile[2] and exists:
                     flash('This username is already being used. Choose a different one')
                     return render_template('profile.html', profile = profile)
                 else:
@@ -569,7 +568,7 @@ def admin_profile():
                                   [new_username,new_username])
             exists = cur_username.fetchall()
             cur_username.close()
-            if exists:
+            if new_username!=profile[2] and exists:
                 flash('This username is already being used. Choose a different one')
                 return render_template('profile.html', profile = profile)
             else:
@@ -808,7 +807,7 @@ def manager_profile():
                                   [new_username,new_username])
             exists = cur_username.fetchall()
             cur_username.close()
-            if exists:
+            if new_username!=profile[2] and exists:
                 flash('This username is already being used. Choose a different one')
                 return render_template('profile.html', profile = profile)
             else:
