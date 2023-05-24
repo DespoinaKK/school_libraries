@@ -1,1 +1,4 @@
 ALTER TABLE users ADD active BIT NOT NULL DEFAULT (1);
+
+
+ALTER TABLE books ADD cover VARCHAR(20);
