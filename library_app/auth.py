@@ -125,7 +125,7 @@ def manager_registration():
                 # pending registration
                 # insert to users_unregistered
                 cur_insert = mysql.connection.cursor()
-                cur_insert.execute('''INSERT INTO managers_unregistered (name, username, password, school_id, role, birthday) \
+                cur_insert.execute('''INSERT INTO users_unregistered (name, username, password, school_id, role, birthday) \
                     VALUES ('{name}', '{username}', '{password}', {school_id}, {role}, '{birthday}');'''.format(name=name,\
                              username=username, password=password,school_id=school_id, role=role, birthday=birthday))
                 mysql.connection.commit()
@@ -479,7 +479,7 @@ def admin_home():
 @role_required([3])
 def pending_manager_registrations():
     cur = mysql.connection.cursor()
-    cur.execute('''SELECT m.name, m.username, m.birthday, s.name FROM managers_unregistered m INNER JOIN schools s ON m.school_id=s.school_id''')
+    cur.execute('''SELECT m.name, m.username, m.birthday, s.name FROM users_unregistered m INNER JOIN schools s ON m.school_id=s.school_id WHERE m.role=2''')
     applications = list(cur.fetchall())
     cur.close()
     if request.method == 'GET':
@@ -488,14 +488,14 @@ def pending_manager_registrations():
         if request.form.get('Reject'):
             cur = mysql.connection.cursor()
             id = request.form.get('Reject')[8:]
-            cur.execute('''DELETE FROM managers_unregistered WHERE id_user = %s''', [id])
+            cur.execute('''DELETE FROM users_unregistered WHERE id_user = %s''', [id])
             mysql.connection.commit()
             cur.close()
             return redirect('/admin/pending_manager_registrations')
         if request.form.get('Accept'):
             id = request.form.get('Accept')[8:]
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT * FROM managers_unregistered WHERE id_user = %s''', [id])
+            cur.execute('''SELECT * FROM users_unregistered WHERE id_user = %s''', [id])
             user_data = cur.fetchone()
             name = user_data[1]
             username=  user_data[2]
@@ -509,7 +509,7 @@ def pending_manager_registrations():
                     VALUES ('{name}', '{username}', '{password}', {school_id}, {role}, '{birthday}');'''.format(name=name,\
                              username=username, password=password,school_id=school_id, role=role, birthday=birthday))
             mysql.connection.commit()
-            cur.execute('''DELETE FROM managers_unregistered WHERE id_user = %s''', [id])
+            cur.execute('''DELETE FROM users_unregistered WHERE id_user = %s''', [id])
             mysql.connection.commit()
             cur.close()
             return redirect('/admin/pending_manager_registrations')
