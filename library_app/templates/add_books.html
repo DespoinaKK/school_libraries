@@ -2,15 +2,21 @@
     <head><title>Add Books</title></head>
     <body>
         <h2>Add New Books</h2>
-        <form method="POST">
+        
+        <form method = "post" enctype="multipart/form-data">
+            {% if exists==0 %}
             <label for="isbn"><strong>ISBN:</strong></label>
             <input name="isbn" id="isbn">
             <label for="copies"><strong>Copies Added:</strong></label>
             <input type="number" min="1" name="copies" id="copies">
             <input type="submit" name="Add Book" value="Add Book">
             <hr>
+            {% endif %}
         {%if exists==1 %}
         <p>Book does not exist in database. Please provide details and insert ISBN and copies again.</p>
+            <label for="isbn"><strong>ISBN:</strong></label>
+            <input name="isbn" id="isbn" value="{{isbn}}" readonly>
+            <br>
             <label for="title"><strong>Title:</strong></label>
             <input name="title" id="title"  required>
             <br>
@@ -39,6 +45,14 @@
                 {{ category[1] }}
             </label>
             {% endfor %}
+            <br>
+            <br>
+            <label for="copies"><strong>Copies Added:</strong></label>
+            <input type="number" min="1" name="copies" id="copies" value="copies" required>
+            <br>
+            <br>
+            <p>Upload book cover</p>
+            <input type=file name=file>
             <br>
             <br>
             <input type="submit" name="Save" value="Save">

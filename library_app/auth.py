@@ -2,8 +2,6 @@ from flask import Flask,render_template, request,redirect,Blueprint,flash,sessio
 from flask_mysqldb import MySQL
 import functools 
 from datetime import datetime, date, timedelta
-import time
-import os
 from .make_image import make_image
 
 app = Flask(__name__)
@@ -969,7 +967,7 @@ def add_books():
                     return redirect('manager/add_books')
                 cur.execute("SELECT category_id, name FROM category")
                 categories = cur.fetchall()
-                return render_template('add_books.html', exists=1, categories=categories)
+                return render_template('add_books.html', exists=1, isbn = isbn, copies = copies, categories=categories)
         
         #add new book in database
         if request.form.get('Save'):
@@ -982,9 +980,12 @@ def add_books():
             summary = request.form['summary']
             language = request.form['language']
             keywords = request.form['keywords']
+            f = request.files['file']
+            filename = f"{isbn}.jpg"
+            f.save(f"library_app/static/cover_pages/{filename}") 
             cur = mysql.connection.cursor()
-            cur.execute("INSERT INTO books (ISBN, title, publisher, page_number, summary, book_language, keywords) \
-                         VALUES (%s, %s, %s, %s, %s, %s, %s)", [isbn, title, publisher, page_number, summary, language, keywords])
+            cur.execute("INSERT INTO books (ISBN, title, publisher, page_number, summary, book_language, keywords, cover) \
+                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", [isbn, title, publisher, page_number, summary, language, keywords, filename])
             mysql.connection.commit()
             author_list=authors.split(',')
             for author in author_list:
@@ -996,7 +997,7 @@ def add_books():
                     mysql.connection.commit()
                     query = f"SELECT author_id FROM author WHERE name='{author}';"
                     cur.execute(query)
-                    author_id == cur.fetchone()[0]
+                    author_id == cur.fetchone()
                 cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s);", [author_id, isbn])
                 mysql.connection.commit()
             categories = request.form.getlist('options[]')  
@@ -1028,17 +1029,16 @@ def manager_books():
         if request.form.get('search author'):
             author = request.form['author']
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT * FROM author WHERE name = %s;''', [author])
-            author = cur.fetchone()
-            if author:
-                author_id = author[0]
+            cur.execute('''SELECT author_id FROM author WHERE name = %s;''', [author])
+            author_id = cur.fetchone()
+            if author_id is None:
+                flash('No results found from input author.')
+                return redirect('/manager/books')
+            else:
                 cur.execute('''SELECT b.ISBN, b.title FROM author a INNER JOIN author_book ab on a.author_id =  ab.author_id \
                         INNER JOIN books b on ab.ISBN = b.ISBN  WHERE a.author_id = %s;''', [author_id])
                 books = cur.fetchall()
                 return render_template('search.html', books = books)
-            else:
-                flash('No results found from input author.')
-                redirect('/manager/books')
 
         if request.form.get('search categories'):
            options = request.form.getlist('options[]')
@@ -1068,8 +1068,7 @@ def manager_books():
         if request.form.get('search title'):
             title = request.form['title']
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
-                  WHERE b.title = %s;''', [title])
+            cur.execute('''SELECT ISBN, title FROM books WHERE title = %s;''', [title])
             books = cur.fetchall()
             cur.close()
             if books:
@@ -1149,7 +1148,24 @@ def manager_book_details(isbn):
                 query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({category}, '{isbn}');"
                 cur.execute(query)
                 mysql.connection.commit()
-            return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+            
+            f = request.files['file']
+            if f.filename != '':
+                # Save the uploaded file and update the database
+                filename = f"{isbn}.jpg"
+                f.save(f"library_app/static/cover_pages/{filename}")
+                cur = mysql.connection.cursor()
+                cur.execute("UPDATE books SET cover = %s WHERE ISBN = %s", [filename, isbn])
+                mysql.connection.commit()
+                cur.close()
+            return redirect(url_for('auth.manager_book_details', isbn=isbn))
+
+
+            
+            
+             
+        
+
 
         if request.form.get('Lend Book'):
             username = request.form['username']
