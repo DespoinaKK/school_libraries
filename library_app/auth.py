@@ -1089,7 +1089,7 @@ def manager_book_details(isbn):
                     mysql.connection.commit()
                     query = f"SELECT author_id FROM author WHERE name='{author}';"
                     cur.execute(query)
-                    author_id == cur.fetchone()
+                    author_id == cur.fetchone()[0]
                 cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s);", [author_id, isbn])
                 mysql.connection.commit()
             categories = request.form.getlist('options[]')  
