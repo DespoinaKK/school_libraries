@@ -12,9 +12,9 @@
             <p><strong>School     : </strong> {{app[3]}}</p>
             <br>
             <form method="post">
-                <input type="submit" name = "Reject" value="Reject #{{app[0]}}">
+                <input type="submit" name = "{{app[4]}}" value="Reject">
                 <br>
-                <input type="submit" name = "Accept" value="Accept #{{app[0]}}">
+                <input type="submit" name = "{{app[4]}}" value="Accept">
             </form>
         {% if not loop.last %}
             <hr>
