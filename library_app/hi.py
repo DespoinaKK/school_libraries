@@ -107,11 +107,23 @@ books = [9780007117307,9780007382161,9780060850524,9780061120084,9780061122415,9
 9789603995044,	
 9789604062389,	
 9789604587546]
-images =[]
+
+import os
+# Function to rename multiple files
+#i = 0
+#path="/home/anastasia/Desktop/db/school_libraries/library_app/static/cover_pages/"
+#for filename in os.listdir(path):
+#	my_dest =str(books[i]) + ".jpg"
+#	my_source =path + filename
+#	my_dest =path + my_dest
+#	# rename() function will
+#	# rename all the files
+#	os.rename(my_source, my_dest)
+#	i += 1
 
 f = open('inserts.txt', 'w')
 for i in range(0, len(books)):
-    query = ('UPDATE books SET filepath=%s WHERE ISBN=%s', images[i], books[i])
+    query = f'''UPDATE books SET cover='{str(books[i]) + ".jpg"}' WHERE ISBN='{books[i]}';'''
     f.write(query)
     f.write('\n')
     

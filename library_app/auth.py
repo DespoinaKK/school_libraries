@@ -3,6 +3,7 @@ from flask_mysqldb import MySQL
 import functools 
 from datetime import datetime, date, timedelta
 import time
+import os
 from .make_image import make_image
 
 app = Flask(__name__)
@@ -197,7 +198,7 @@ def user():
             return redirect('my_school/authors')
         if request.form.get('show all books'):
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.ISBN,b.title FROM books b INNER JOIN book_school bs WHERE bs.school_id=%s''', [school_id])
+            cur.execute('''SELECT b.ISBN,b.title FROM books b INNER JOIN book_school bs ON b.ISBN=bs.ISBN WHERE bs.school_id=%s''', [school_id])
             books = cur.fetchall()
             return render_template('all_books.html', books=books)
         if request.form.get('search'):
@@ -1088,6 +1089,7 @@ def manager_book_details(isbn):
     cur = mysql.connection.cursor()
     cur.execute('''SELECT * FROM books WHERE ISBN = %s;''',[isbn])
     details = cur.fetchone()
+    path = "/static/cover_pages/{det}".format(det=details[7])
     cur.execute('''SELECT name FROM category c INNER JOIN book_category bk on c.category_id = bk.category_id \
                where bk.ISBN = %s;''', [isbn])
     categories = cur.fetchall()
@@ -1101,13 +1103,13 @@ def manager_book_details(isbn):
     if copies == ():
         in_school = 0
     if request.method == 'GET':
-        return render_template('manager_book_details.html', details = details, categories = categories, authors = authors, in_school = in_school, copies = copies) 
+        return render_template('manager_book_details.html', details = details, categories = categories, authors = authors, in_school = in_school, copies = copies, path = path) 
     if request.method == 'POST':
         if request.form.get('Edit Book Info'):
             cur = mysql.connection.cursor()
             cur.execute('''SELECT category_id, name FROM category''')
             all_categories=cur.fetchall()
-            return render_template('edit_book.html', details = details, authors = authors, bk_categories = [row[0] for row in categories], all_categories=all_categories)
+            return render_template('edit_book.html', details = details, authors = authors, bk_categories = [row[0] for row in categories], all_categories=all_categories, path = path)
         
         if request.form.get('Save'):
             title = request.form['title']
@@ -1550,6 +1552,7 @@ def details(isbn):
     cur = mysql.connection.cursor()
     cur.execute('''SELECT * FROM books WHERE ISBN = %s;''',[isbn])
     details = cur.fetchone()
+    path = "/static/cover_pages/{det}".format(det=details[7])
     cur.execute('''SELECT name FROM category c INNER JOIN book_category bk on c.category_id = bk.category_id \
                where bk.ISBN = %s;''', [isbn])
     categories = cur.fetchall()
@@ -1571,12 +1574,12 @@ def details(isbn):
     elif no_of_active_bookings >= 1 and role == 1:
         can_book = False
     if request.method == 'GET':
-        return render_template('book_details.html', details = details, categories = categories, authors = authors)
+        return render_template('book_details.html', details = details, categories = categories, authors = authors, path = path)
     if request.method == 'POST':
         if request.form.get('details'):
             if not can_book:
                 flash("You have reached your upper limit for the week. Try again later, or return any books you may have borrowed.")
-                return render_template('book_details.html', details = details, categories = categories, authors = authors)
+                return render_template('book_details.html', details = details, categories = categories, authors = authors, path = path)
             now = datetime.now()
             dt_string = now.strftime("%Y/%m/%d %H:%M:%S")
             cur_insert = mysql.connection.cursor()
@@ -1585,7 +1588,7 @@ def details(isbn):
                                  id_user=session['userid'], ISBN=isbn,school_id=session['school_id']))
             mysql.connection.commit()
             flash('Your reservation was submitted successfully')
-            return render_template('book_details.html', details = details, categories = categories, authors = authors)
+            return render_template('book_details.html', details = details, categories = categories, authors = authors, path = path)
         
         if request.form.get('review'):
             return render_template('add_review.html', title = details[0])
@@ -1600,5 +1603,5 @@ def details(isbn):
             mysql.connection.commit()
             curs.close()
             flash("Your Review was submitted for approval")
-            return render_template('book_details.html', details = details, categories = categories, authors = authors)
+            return render_template('book_details.html', details = details, categories = categories, authors = authors, path = path)
             
