@@ -765,6 +765,8 @@ def manager_home():
             return redirect('/manager/books')
         if request.form.get('Add Books'):
             return redirect('/manager/add_books')
+        if request.form.get('Delete Books'):
+            return redirect('/manager/delete_books')
         if request.form.get('Delayed Returns'):
             return redirect('/manager/delayed_returns')
         if request.form.get('Statistics of Reviews'):
@@ -954,7 +956,7 @@ def add_books():
                 mysql.connection.commit()
                 cur.close()
                 flash('Book already existed in school. Copies updated successfully!')
-                return redirect('manager/add_books')
+                return redirect('/manager/add_books')
             else:
                 #add new book to school that exists in database
                 cur = mysql.connection.cursor()
@@ -964,7 +966,7 @@ def add_books():
                     cur.execute("INSERT INTO book_school (ISBN, school_id, copies_available) VALUES (%s, %s, %s)",[isbn, session['school_id'], copies])
                     mysql.connection.commit()
                     flash('Book exists in database and it was added successfully!')
-                    return redirect('manager/add_books')
+                    return redirect('/manager/add_books')
                 cur.execute("SELECT category_id, name FROM category")
                 categories = cur.fetchall()
                 return render_template('add_books.html', exists=1, isbn = isbn, copies = copies, categories=categories)
@@ -1011,7 +1013,36 @@ def add_books():
             flash('Book added successfully!')
             return redirect('/manager/add_books')
 
-
+@bp.route('/manager/delete_books', methods=('GET', 'POST'))
+@role_required([2])
+def delete_books():
+    if request.method == 'GET':
+        return render_template('delete_books.html')
+    
+    if request.method == 'POST':
+        if request.form.get('Delete Copies'):
+            isbn = request.form['isbn']
+            if len(isbn)<10:
+                flash('Invalid ISBN.')
+                return redirect('/manager/delete_books')
+            copies = request.form['copies']
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT copies_available FROM book_school WHERE ISBN=%s AND school_id=%s''', [isbn, session['school_id']])
+            existing_copies = cur.fetchone()
+            cur.close()
+            if existing_copies is None:
+                flash('Book does not exist in school!')
+                return redirect('/manager/delete_books')
+            if existing_copies[0] < int(copies):
+                flash('Existing copies are less than the copies to be removed. Insert a different value of copies to be removed!')
+                return redirect('/manager/delete_books')
+            cur = mysql.connection.cursor()
+            cur.execute('UPDATE book_school SET copies_available = copies_available-%s WHERE ISBN=%s AND school_id=%s', [copies, isbn, session['school_id']])
+            mysql.connection.commit()
+            cur.close()
+            flash('Copies updated successfully!')
+            return redirect('/manager/delete_books')
+            
     
 @bp.route('/manager/books', methods=('GET', 'POST'))
 @role_required([2])
@@ -1173,7 +1204,7 @@ def manager_book_details(isbn):
             username = request.form['username']
             cur = mysql.connection.cursor()
             #check if user exists
-            cur.execute('SELECT id_user,role FROM users WHERE username=%s AND school_id=%s', [username, session['school_id']])
+            cur.execute('SELECT id_user,role FROM users WHERE username=%s AND school_id=%s AND active=1', [username, session['school_id']])
             dets = cur.fetchone()
             cur.close()
             if dets is None:
@@ -1207,6 +1238,15 @@ def manager_book_details(isbn):
             if role+books_borrowed[0] >=2:
                 flash('User has reached their limit for the week. Try again in a few days!')
                 return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+            #check if user has now the same book
+            cur = mysql.connection.cursor()
+            cur.execute('SELECT ISBN FROM lending WHERE return_date is NULL AND id_user=%s AND ISBN=%s', [user_id, isbn])
+            has_borrowed = cur.fetchone()
+            cur.close()
+            if has_borrowed is not None:
+                flash('User currently has a copy of this book!')
+                return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
+
             #if everything ok insert into lendings
             cur = mysql.connection.cursor()
             cur.execute('''INSERT INTO lending (borrow_date, id_user, ISBN, school_id) \
@@ -1342,9 +1382,11 @@ def pending_lendings():
         a = cur.fetchone()
         booker_username.append(a[0])
         booker_role.append(a[1])
+        #count copies available
         cur.execute(''' SELECT copies_available FROM book_school WHERE isbn = %s AND school_id = %s''', [isbn, school_id])
         copies.append(cur.fetchone())
-        cur.execute('''SELECT count(*) FROM lending WHERE id_user = %s AND return_date is NULL''', [booker_id])
+        #count lendings in the past week 
+        cur.execute('''SELECT count(*) FROM lending WHERE id_user = %s AND borrow_date > %s''', [booker_id, datetime.now()-timedelta(days=7)])
         active_lendings.append(cur.fetchone())
     cur.close()
     if request.method == 'GET':
@@ -1577,11 +1619,17 @@ def details(isbn):
     cur.execute('''SELECT name FROM author a INNER JOIN author_book ab on a.author_id = ab.author_id \
                where ab.ISBN = %s;''', [isbn])
     authors = cur.fetchall()
+    #find active bookings
     cur.execute('''SELECT count(*) FROM booking WHERE id_user = %s''', [session['userid']])
     no_of_active_bookings = cur.fetchone()[0]
     can_book = True
     cur.execute('''SELECT role FROM users WHERE id_user = %s''', [session['userid']])
     role = cur.fetchone()[0]
+    #find if user has booked or currently has the same book
+    cur.execute('''SELECT ISBN FROM lending WHERE id_user = %s AND ISBN=%s AND return_date IS NULL''', [session['userid'], isbn])
+    has_book = cur.fetchone()
+    if has_book is not None:
+        can_book = False
     # find delayed books
     cur.execute('''SELECT count(*) FROM lending WHERE return_date IS NULL AND id_user = %s AND borrow_date < %s''', \
                 [session['userid'], datetime.now()-timedelta(days=7)])

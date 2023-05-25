@@ -1,0 +1,18 @@
+<html>
+    <head><title>Delete Books</title></head>
+    <body>
+        <h2>Delete Copies</h2>
+        
+        <form method = "post">
+            <label for="isbn"><strong>ISBN:</strong></label>
+            <input name="isbn" id="isbn">
+            <label for="copies"><strong>Copies Removed:</strong></label>
+            <input type="number" min="1" name="copies" id="copies">
+            <input type="submit" name="Delete Copies" value="Delete Copies">
+            <hr>
+        </form>
+        {% for mesg in get_flashed_messages() %}
+        <p>{{ mesg }}</p>
+        {% endfor %}
+    </body>
+</html>
