@@ -188,7 +188,7 @@ def user():
             return redirect('user/profile')
         if request.form.get('show reviews'):
             return redirect('user/reviews')
-        if request.form.get('show delays'):###########
+        if request.form.get('show delays'):
             return redirect('user/delays')
         if request.form.get('show bookings'):
             return redirect('user/bookings')
@@ -1043,7 +1043,103 @@ def delete_books():
             flash('Copies updated successfully!')
             return redirect('/manager/delete_books')
             
-    
+
+@bp.route('/manager/myschool/books', methods=('GET', 'POST'))
+@role_required([2])
+def manager_myschool_books():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT b.title, b.isbn FROM books b INNER JOIN book_school bs ON bs.ISBN = b.ISBN WHERE bs.school_id = %s''', [session['school_id']])
+    all_books = cur.fetchall()
+    cur.execute('''SELECT category_id, name FROM category''')
+    categories = cur.fetchall()
+    if request.method == 'GET':
+        return render_template ('manager_search_mybooks.html', all_books = all_books, categories=categories)
+
+    if request.method == 'POST':
+        if request.form.get('search copies'):
+            copies = int(request.form['copies'])
+            flash(copies)
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+                        WHERE bs.copies_available = %s AND bs.school_id = %s''', [copies, session['school_id']])
+            books = cur.fetchall()
+            cur.close()
+            return render_template('search.html', books = books)
+        if request.form.get('search author'):
+            author = request.form['author']
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT a.author_id, a.name FROM author a INNER JOIN author_book ab ON a.author_id = ab.author_id INNER JOIN book_school bs ON bs.ISBN = ab.ISBN \
+                WHERE a.name LIKE '%{author}%' AND bs.school_id = {school_id} GROUP BY a.author_id;'''.format(author=author, school_id = session['school_id']))
+            authors = list(cur.fetchall())
+            if authors == []:
+                flash('No results found for input author.')
+                return redirect('/manager/myschool/books')
+            else:
+                return render_template('authors_manager.html', authors=authors)
+        for key,value in request.form.items():
+            if value=="See author's books":    
+                author_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN author_book ab ON b.ISBN=ab.ISBN INNER JOIN book_school bs \
+                    ON bs.ISBN = b.ISBN WHERE author_id=%s AND bs.school_id = %s''', [author_id, session['school_id']])
+                books = cur.fetchall()
+                return render_template('search.html', books = books) 
+            if value == "Details":
+                isbn = key
+                return redirect(url_for("auth.manager_book_details", isbn=isbn))            
+                
+                #cur.execute('''SELECT b.ISBN, b.title FROM author a INNER JOIN author_book ab on a.author_id =  ab.author_id \
+                #        INNER JOIN books b on ab.ISBN = b.ISBN  WHERE a.name LIKE '%{author}%';'''.format(author=author))
+                #books = cur.fetchall()
+                #return render_template('search.html', books = books)
+
+        if request.form.get('search categories'):
+           options = request.form.getlist('options[]')
+           if options == []:
+                flash('Choose Categories!')
+                return redirect('/manager/myschool/books')
+           else:
+                search_cur = mysql.connection.cursor()
+                query = []
+                for option in options:
+                     query.append('''(SELECT ISBN FROM book_category WHERE category_id = %s)''' % (option))
+                u = " INTERSECT "
+                u = u.join(query)
+                u = "(" + u + ") bk"
+                
+                q1 = '''SELECT * FROM ''' + u + ''' INNER JOIN books b on bk.ISBN = b.ISBN''' #store query to use later
+                
+                search_cur.execute('''SELECT * FROM ''' + u + ''' INNER JOIN books b on bk.ISBN = b.ISBN INNER JOIN book_school bs\
+                    ON bs.ISBN = b.ISBN WHERE bs.school_id = %s;''',[session['school_id']])
+                books = search_cur.fetchall()
+                search_cur.close()
+                if books == ():
+                    flash('No results found for input categories.')
+                    return redirect('/manager/myschool/books')
+                else:
+                    return render_template('search.html', books = books)
+                
+        if request.form.get('search title'):
+            title = request.form['title']
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+                  WHERE b.title LIKE '%{title}%' AND bs.school_id = {school_id};'''.format(title=title,school_id=session['school_id']))
+            book = cur.fetchall()
+            cur.close()
+            if book:
+                return render_template('search.html', books = book)
+            else:
+                flash("No results found")
+                return redirect('/manager/books')
+
+        for key,value in request.form.items():
+            if value == 'Details':
+                isbn = key
+                return redirect(url_for('auth.manager_book_details', isbn=isbn))
+
+
+
+
 @bp.route('/manager/books', methods=('GET', 'POST'))
 @role_required([2])
 def manager_books():
@@ -1056,20 +1152,44 @@ def manager_books():
         return render_template ('manager_search_books.html', all_books = all_books, categories=categories)
 
     if request.method == 'POST':
-
+        if request.form.get('only my school'):
+            return redirect('/manager/myschool/books')
+        if request.form.get('search copies'):
+            copies = int(request.form['copies'])
+            flash(copies)
+            cur = mysql.connection.cursor()
+            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+                        WHERE bs.copies_available = %s AND bs.school_id = %s''', [copies, session['school_id']])
+            books = cur.fetchall()
+            cur.close()
+            return render_template('search.html', books = books)
         if request.form.get('search author'):
             author = request.form['author']
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT author_id FROM author WHERE name = %s;''', [author])
-            author_id = cur.fetchone()
-            if author_id is None:
-                flash('No results found from input author.')
+            cur.execute('''SELECT author_id FROM author WHERE name LIKE '%{author}%';'''.format(author=author))
+            author_id = list(cur.fetchall())
+            if author_id == []:
+                flash('No results found for input author.')
                 return redirect('/manager/books')
             else:
-                cur.execute('''SELECT b.ISBN, b.title FROM author a INNER JOIN author_book ab on a.author_id =  ab.author_id \
-                        INNER JOIN books b on ab.ISBN = b.ISBN  WHERE a.author_id = %s;''', [author_id])
+                cur.execute('''SELECT author_id, name FROM author where name LIKE '%{author}%';'''.format(author=author))
+                authors = cur.fetchall()
+                return render_template('authors_manager.html', authors=authors)
+        for key,value in request.form.items():
+            if value=="See author's books":    
+                author_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN author_book ab ON b.ISBN=ab.ISBN WHERE author_id=%s''', [author_id])
                 books = cur.fetchall()
-                return render_template('search.html', books = books)
+                return render_template('search.html', books = books) 
+            if value == "Details":
+                isbn = key
+                return redirect(url_for("auth.manager_book_details", isbn=isbn))            
+                
+                #cur.execute('''SELECT b.ISBN, b.title FROM author a INNER JOIN author_book ab on a.author_id =  ab.author_id \
+                #        INNER JOIN books b on ab.ISBN = b.ISBN  WHERE a.name LIKE '%{author}%';'''.format(author=author))
+                #books = cur.fetchall()
+                #return render_template('search.html', books = books)
 
         if request.form.get('search categories'):
            options = request.form.getlist('options[]')
@@ -1099,11 +1219,12 @@ def manager_books():
         if request.form.get('search title'):
             title = request.form['title']
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT ISBN, title FROM books WHERE title = %s;''', [title])
-            books = cur.fetchall()
+            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+                  WHERE b.title LIKE '%{title}%' AND bs.school_id = {school_id};'''.format(title=title,school_id=session['school_id']))
+            book = cur.fetchall()
             cur.close()
-            if books:
-                return render_template('search.html', books = books)
+            if book:
+                return render_template('search.html', books = book)
             else:
                 flash("No results found")
                 return redirect('/manager/books')
