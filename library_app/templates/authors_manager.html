@@ -1,0 +1,20 @@
+
+<html>
+    <head>
+        <title>Authors</title>
+    </head>
+    <body>
+        <h1>Authors Search Results:</h1>
+        <h2>All the system authors that matched your search:</h2>
+        {% for i in range(authors|length): %}
+            <h2>{{ authors[i][1] }}</h2>
+            <form method="post">
+            <input type = 'submit' name = "{{authors[i][0]}}" value = "See author's books">
+            </form>
+            {% if not loop.last %}
+            <hr>
+        {% endif %}
+  {% endfor %}
+
+    </body>
+</html>
