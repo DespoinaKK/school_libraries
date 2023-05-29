@@ -1,8 +1,9 @@
-from flask import Flask,render_template, request,redirect,Blueprint,flash,session, url_for, g
+from flask import Flask,render_template, request,redirect,Blueprint,flash,session, url_for, g, send_file
 from flask_mysqldb import MySQL
 import functools 
 from datetime import datetime, date, timedelta
 from .make_image import make_image
+import os
 
 app = Flask(__name__)
  
@@ -470,6 +471,13 @@ def admin_home():
             return redirect('admin/q6')
         if request.form.get('q7'):
             return redirect('admin/q7')
+        
+        if request.form.get('backup'):
+            command = 'mysqldump --socket=/var/run/mysqld/mysqld.sock -h 127.0.0.1 -u root -p school_libraries > backup.sql'
+            os.system(command)
+            command = '\n'
+            os.system(command)
+            return send_file('backup.sql', as_attachment=True)
     if request.method == 'GET':
         return render_template('admin_home.html', name=session['name'])
     
