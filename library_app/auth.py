@@ -453,6 +453,8 @@ def admin_home():
     if request.method == 'POST':
         if request.form.get('Pending manager registrations'):
             return redirect('/admin/pending_manager_registrations')
+        if request.form.get('Show all schools'):
+            return redirect('/admin/show_all_schools')
         if request.form.get('Add School'):
             return redirect('/admin/add_school')
         if request.form.get('show profile'):
@@ -521,6 +523,42 @@ def pending_manager_registrations():
                 cur.close()
                 return redirect('/admin/pending_manager_registrations')
     
+@bp.route('/admin/show_all_schools', methods=('GET', 'POST'))
+@role_required([3])
+def show_all_schools():
+    cur = mysql.connection.cursor()
+    cur.execute('''SELECT * FROM schools;''')
+    schools = list(cur.fetchall())
+    cur.close()
+    if request.method == 'GET':
+        return render_template('show_all_schools.html', schools=schools, school=[])
+    
+    if request.method == 'POST':
+        school_id = request.form['schools']
+        cur = mysql.connection.cursor()
+        cur.execute('''SELECT * FROM schools WHERE school_id = %s;''', [school_id])
+        school = cur.fetchone()
+        cur.close()
+        for key,value in request.form.items():    
+            if value == 'Save':
+                school_id = key
+                school_name = request.form['school_name']
+                director = request.form['director']
+                address = request.form['address']
+                city = request.form['city']
+                post_code = request.form['post_code']
+                telephone_number = request.form['telephone_number']
+                email = request.form['email']
+                cur = mysql.connection.cursor()
+                cur.execute('''UPDATE schools SET name = %s, director = %s, address = %s, city = %s, post_code = %s, telephone_number = %s, email = %s WHERE school_id = %s''',\
+                                [school_name, director, address, city, post_code, telephone_number, email, school_id])
+                mysql.connection.commit()
+                cur.execute('''SELECT * FROM schools WHERE school_id = %s;''', [school_id])
+                school = cur.fetchone()
+                cur.close()
+                flash("School's info have changed successfully!")
+        return render_template('show_all_schools.html', school=school, schools=schools)
+
 @bp.route('/admin/add_school', methods=('GET', 'POST'))
 @role_required([3])
 def add_school():
@@ -896,9 +934,7 @@ def review_stats():
                     if average is None:
                         average = '-'
                     return render_template('review_stats.html', categories=categories, average=average, search=3, cat_name=cat_name, name=username)
-                
-
-           
+                         
 @bp.route('/manager/delayed_returns', methods=('GET', 'POST'))
 @role_required([2])
 def delayed_returns():
@@ -936,8 +972,7 @@ def delayed_returns():
                 details = cur.fetchall()
                 cur.close()
                 return render_template('delayed_returns.html', details = details, searched = 1)
-        
-    
+           
 @bp.route('/manager/add_books', methods=('GET', 'POST'))
 @role_required([2])
 def add_books():
@@ -1051,7 +1086,6 @@ def delete_books():
             flash('Copies updated successfully!')
             return redirect('/manager/delete_books')
             
-
 @bp.route('/manager/myschool/books', methods=('GET', 'POST'))
 @role_required([2])
 def manager_myschool_books():
@@ -1144,9 +1178,6 @@ def manager_myschool_books():
             if value == 'Details':
                 isbn = key
                 return redirect(url_for('auth.manager_book_details', isbn=isbn))
-
-
-
 
 @bp.route('/manager/books', methods=('GET', 'POST'))
 @role_required([2])
@@ -1386,8 +1417,6 @@ def manager_book_details(isbn):
             flash('Lending was registered successfully!')
             return redirect(url_for('auth.manager_book_details', isbn=isbn)) 
         
-
-
 @bp.route('/manager/pending_reviews', methods=('GET', 'POST'))
 @role_required([2])
 def pending_reviews():

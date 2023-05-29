@@ -1,0 +1,48 @@
+<html>
+    <head>
+        <title>Schools</title>
+    </head>
+    <body>
+    <h1>Show and Edit School Information</h1>
+    <form method="post">
+        <label for="schools">Choose school:</label>
+        <select name="schools" id="schools">
+            <option></option>
+            {% for sch in schools: %}
+                <option value="{{sch[0]}}">{{sch[1]}}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <input type="submit" value="Show info">
+        <br>
+        {% if school!=[]: %}
+            <label for="school_name">School name:</label>
+            <input name="school_name" id="school_name" value="{{school[1]}}" required>
+            <br>
+            <label for="director">Director:</label>
+            <input name="director" id="director" value="{{school[2]}}" required>
+            <br>
+            <label for="address">Address:</label>
+            <input name="address" id="address" value="{{school[3]}}" required>
+            <br>
+            <label for="city">City:</label>
+            <input name="city" id="city" value="{{school[4]}}" required>
+            <br>
+            <label for="post_code">Post code:</label>
+            <input name="post_code" id="post_code" value="{{school[5]}}" required>
+            <br>
+            <label for="telephone_number">Telephone number:</label>
+            <input name="telephone_number" id="telephone_number" value="{{school[6]}}" required>
+            <br>
+            <label for="email">E-mail:</label>
+            <input name="email" id="email" value="{{school[7]}}" required>
+            <br>
+            <input type="submit" name = {{school[0]}} value="Save">
+            <br>
+            {% for message in get_flashed_messages() %}
+            <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    </form>
+</body>
+  </html>
