@@ -46,6 +46,7 @@
             <input type="submit" name = "restore" value="Restore Database">
             <input type="file" name="file">
         </form>
+        <br>
         {% for message in get_flashed_messages() %}
         <div class="flash">{{ message }}</div>
         {% endfor %}
