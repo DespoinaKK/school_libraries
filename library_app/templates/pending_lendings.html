@@ -7,13 +7,22 @@
         {% for i in range(bookings|length): %}
             <h2>{{ title[i][0] }}</h2>
             <p><strong>User:</strong> {{booker_username[i]}}</p>
-            <p>Active Lendings: {{active_lendings[i][0]}}</p>
+            <p>This week's Lendings: {{active_lendings[i][0]}}</p>
             <p><strong>Date of Booking:</strong> {{bookings[i][1]}}</p>
             <p><strong>Copies Available:</strong> {{copies[i][0]}}</p>
-            {% if (active_lendings[i][0] < 2 - booker_role[i]) and (copies[i][0] > 0) | safe %}
+            {% if can_lend[i] and (active_lendings[i][0] < 2 - booker_role[i]) and (copies[i][0] > 0) | safe %}
             <form method="post">
-                <input type="submit" name = "Lend" value="Lend (#{{bookings[i][0]}})">
+                <input type="submit" name = "{{bookings[i][0]}}" value="Lend">
             </form>
+            {%endif%}
+            {% if not can_lend[i] and copies[1][0]!=0:%}
+            <p>There are reservations with higher priority for this book.</p>
+            {%endif%}
+            {% if not (active_lendings[i][0] < 2 - booker_role[i]):%}
+            <p>This user has reached the upper limit of borrowing for this week.</p>
+            {%endif%}
+            {% if not (copies[i][0] > 0):%}
+            <p>There are not enough copies for this book.</p>
             {%endif%}
         {% if not loop.last %}
             <hr>

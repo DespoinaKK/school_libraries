@@ -12,6 +12,12 @@
             <p><strong>ISBN:</strong> {{ isbn[i] }}</p>
             <p><strong>Date of Reservation:</strong> {{ date_of_booking[i] }}</p>
             <p><strong>Reservation expires at:</strong> {{ date_of_exp[i] }}</p>
+            {%if can_borrow[i]:%}
+            <p style="color:rgb(23, 85, 126);"><strong>This book is available right now! You can visit your School Library to borrow it.</strong></p>
+            {% endif %}
+            {%if not can_borrow[i]:%}
+            <p style="color:rgb(179, 6, 66);"><strong>This book is not available yet.</strong></p>
+            {% endif %}
             <form method = "post">
                 <input type="submit" name="{{isbn[i]}}" value = "Cancel Reservation">
             </form>

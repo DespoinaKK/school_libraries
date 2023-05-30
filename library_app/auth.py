@@ -135,7 +135,7 @@ def manager_registration():
 @bp.route('/logout', methods=('GET', 'POST'))
 def logout():
     session.clear()
-    return redirect('/')
+    return redirect('/') 
 
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
@@ -303,19 +303,28 @@ def school_authors():
 def my_bookings():
     delete_expired_bookings()
     cur = mysql.connection.cursor()
-    cur.execute('''SELECT b.isbn, b.title, bk.date_of_booking FROM booking bk INNER JOIN books b ON bk.ISBN = b.ISBN WHERE bk.id_user = %s''', [session['userid']])
+    cur.execute('''SELECT b.isbn, b.title, bk.date_of_booking, bs.copies_available FROM booking bk \
+        INNER JOIN books b ON bk.ISBN = b.ISBN \
+        INNER JOIN book_school bs ON bs.ISBN = b.ISBN WHERE bk.id_user = %s''', [session['userid']])
     bookings = list(cur.fetchall())
     isbn = []
     title = []
     date_of_booking = []
-    cur.close()
+    can_borrow = []
+    #cur.close()
     for book in bookings:
         isbn.append(book[0])
         title.append(book[1])
         date_of_booking.append(book[2])
+        copies_av = book[3]
+        cur.execute(f'''SELECT count(*) FROM booking b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+            WHERE b.ISBN = '{book[0]}' AND bs.school_id = {session['school_id']} AND b.date_of_booking < '{book[2]}' AND b.id_user != {session['userid']}''')
+        active_bookings = cur.fetchone()[0]
+        can_borrow.append(copies_av > active_bookings)
+    cur.close()    
     date_of_exp = [i + timedelta(days=7) for i in date_of_booking]
     if request.method == 'GET':
-        return render_template('my_bookings.html', isbn = isbn, title = title, date_of_booking = date_of_booking, date_of_exp = date_of_exp)
+        return render_template('my_bookings.html', isbn = isbn, title = title, date_of_booking = date_of_booking, date_of_exp = date_of_exp, can_borrow = can_borrow)
     if request.method == 'POST':
         for key,value in request.form.items():
             if value == "Cancel Reservation":
@@ -1557,6 +1566,7 @@ def pending_lendings():
     copies = []
     active_lendings = []
     booker_role = []
+    can_lend = []
     cur.execute('''SELECT * FROM booking WHERE school_id=%s ORDER BY date_of_booking ASC;''', [school_id])
     bookings = list(cur.fetchall())
     for booking in bookings:
@@ -1574,24 +1584,29 @@ def pending_lendings():
         #count lendings in the past week 
         cur.execute('''SELECT count(*) FROM lending WHERE id_user = %s AND borrow_date > %s''', [booker_id, datetime.now()-timedelta(days=7)])
         active_lendings.append(cur.fetchone())
+        #count reservations with higher priority
+        cur.execute(f'''SELECT count(*) FROM booking b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+            WHERE b.ISBN = '{booking[3]}' AND bs.school_id = {school_id} AND b.date_of_booking < '{booking[1]}' AND b.id_user != {booking[2]}''')
+        can_lend.append(copies[-1][0] > cur.fetchone()[0])
     cur.close()
     if request.method == 'GET':
         return render_template('pending_lendings.html', copies = copies, bookings = bookings, booker_username = booker_username,
-            title = title, active_lendings = active_lendings, booker_role = booker_role)
+            title = title, active_lendings = active_lendings, booker_role = booker_role, can_lend = can_lend)
     if request.method == 'POST':
-        if request.form.get('Lend'):
-            booking_id =  request.form.get('Lend')[7:]
-            cur = mysql.connection.cursor()
-            cur.execute('''SELECT * FROM booking WHERE booking_id = %s''', [booking_id])
-            books_to_lend = cur.fetchone()
-            cur = mysql.connection.cursor()
-            cur.execute('''INSERT INTO lending (borrow_date, id_user, ISBN, school_id) \
+        for key,value in request.form.items():
+            if value == 'Lend':
+                booking_id = key
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT * FROM booking WHERE booking_id = %s''', [booking_id])
+                books_to_lend = cur.fetchone()
+                cur = mysql.connection.cursor()
+                cur.execute('''INSERT INTO lending (borrow_date, id_user, ISBN, school_id) \
                     VALUES ('{borrow_date}', {id_user}, '{ISBN}', {school_id});'''.format(borrow_date=date.today(),\
                              id_user=books_to_lend[2], ISBN=books_to_lend[3],school_id=books_to_lend[4]))
-            cur.execute('''DELETE FROM booking WHERE booking_id = %s''', [booking_id])
-            mysql.connection.commit()
-            cur.close()
-            return redirect('/manager/pending_lendings')
+                cur.execute('''DELETE FROM booking WHERE booking_id = %s''', [booking_id])
+                mysql.connection.commit()
+                cur.close()
+                return redirect('/manager/pending_lendings')
             
 @bp.route('/manager/active_lendings', methods=('GET', 'POST'))
 @role_required([2])
