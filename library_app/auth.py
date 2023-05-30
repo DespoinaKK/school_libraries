@@ -3,7 +3,7 @@ from flask_mysqldb import MySQL
 import functools 
 from datetime import datetime, date, timedelta
 from .make_image import make_image
-import os
+import subprocess
 
 app = Flask(__name__)
  
@@ -459,6 +459,7 @@ def admin_home():
             return redirect('/admin/add_school')
         if request.form.get('show profile'):
             return redirect('admin/profile')
+        
         if request.form.get('q1'):
             return redirect('admin/q1')
         if request.form.get('q2'):
@@ -475,11 +476,38 @@ def admin_home():
             return redirect('admin/q7')
         
         if request.form.get('backup'):
-            command = 'mysqldump --socket=/var/run/mysqld/mysqld.sock -h 127.0.0.1 -u root -p school_libraries > backup.sql'
-            os.system(command)
-            command = '\n'
-            os.system(command)
-            return send_file('backup.sql', as_attachment=True)
+            command = 'mysqldump --socket=/var/run/mysqld/mysqld.sock -h 127.0.0.1 -u root --password="" school_libraries > backup.sql'
+            process = subprocess.run(command, shell=True)
+            
+            if process.returncode == 0:
+                #Return the backup file to the user for download
+                return send_file('../backup.sql', as_attachment=True)
+            else:
+                flash("Error in creating backup file. Please try again!")
+                return redirect('/admin')
+            
+        if request.form.get('restore'):
+            f = request.files['file']
+            if f.filename == '':
+                flash("No file selected!")
+                return redirect("/admin")
+            
+            if f.filename.endswith('.sql'):
+                filename = f"restored_db.sql"
+                f.save(f"library_app/{filename}")
+                command = 'mysql --socket=/var/run/mysqld/mysqld.sock -h 127.0.0.1 -u root --password="" school_libraries < backup.sql'
+                process = subprocess.run(command, shell=True)
+
+                if process.returncode == 0:
+                    flash("Database restored successfully!")
+                    return redirect("/admin")
+                else:
+                    flash("Error in creating backup file. Please try again!")
+                    return redirect('/admin')
+            else:
+                flash("Please upload .sql file!")
+                return redirect("/admin")
+
     if request.method == 'GET':
         return render_template('admin_home.html', name=session['name'])
     

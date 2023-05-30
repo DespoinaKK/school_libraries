@@ -4,7 +4,7 @@
     
         {% block header %}<h1>Welcome {{ name }}</h1>{% endblock %}
         {% block content %}
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             <input type="submit" name = "Pending manager registrations" value="Pending manager registrations">
             <br>
             <br>
@@ -41,7 +41,14 @@
             <br>
             <br>
             <input type="submit" name ="backup" value="Backup Database">
+            <br>
+            <br>
+            <input type="submit" name = "restore" value="Restore Database">
+            <input type="file" name="file">
         </form>
+        {% for message in get_flashed_messages() %}
+        <div class="flash">{{ message }}</div>
+        {% endfor %}
             
     {% endblock %}
     
