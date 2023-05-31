@@ -203,6 +203,7 @@ def user():
         if request.form.get('search'):
            options = request.form.getlist('options[]')
            cat = False
+           #categories where chosen
            if options != []:
                 cat = True   # categories where chosen
                 search_cur = mysql.connection.cursor()
@@ -220,11 +221,13 @@ def user():
                 books1 = search_cur.fetchall()
                 search_cur.close()
            
-           author = request.form['author']
-           if author:
+           author_name = request.form['author']
+           #author was chosen
+           if author_name:
                 cur = mysql.connection.cursor()
-                cur.execute('''SELECT * FROM author WHERE name=  %s;''', [author])
+                cur.execute('''SELECT * FROM author WHERE name=  %s;''', [author_name])
                 author = cur.fetchone()
+                #author exists
                 if author:
                     author_id = author[0]
                     cur.execute('''SELECT b.ISBN, b.title FROM author a INNER JOIN author_book ab on a.author_id =  ab.author_id \
@@ -233,25 +236,35 @@ def user():
                     
                     books2 = cur.fetchall()
                     
+                    #author and categories where chosen
                     if cat: 
                         cur.execute(q1 + ''' INNER JOIN author_book ab on ab.ISBN = b.ISBN \
                                     INNER JOIN book_school bs on bs.ISBN = b.ISBN WHERE bs.school_id = %s AND ab.author_id = %s;''' , [school_id, author_id])
                         books = cur.fetchall()
                     
+                    #only author was chosen
                     else:
                         books = books2
                     cur.close()
+                #author does not exist
                 else:
                     flash("The input author does not exist. Try again!")
                     return redirect('/user')
-
+            
+            #author was not chosen
            else:
-               books = books1
+                #categories were chosen but not author
+                if cat == True:
+                    books = books1
+                #nothing was chosen
+                else:
+                    flash('Choose author or categories!')
+                    return redirect('/user')
            if books == ():
-               flash("No results found")
-               return redirect('/user')
+                flash("No results found")
+                return redirect('/user')
            else:
-               return render_template('search.html', books = books)
+                return render_template('search.html', books = books)
         
         if request.form.get('search title'):
             title = request.form['title']
@@ -305,7 +318,7 @@ def my_bookings():
     cur = mysql.connection.cursor()
     cur.execute('''SELECT b.isbn, b.title, bk.date_of_booking, bs.copies_available FROM booking bk \
         INNER JOIN books b ON bk.ISBN = b.ISBN \
-        INNER JOIN book_school bs ON bs.ISBN = b.ISBN WHERE bk.id_user = %s''', [session['userid']])
+        INNER JOIN book_school bs ON bs.ISBN = b.ISBN WHERE bk.id_user = %s AND bs.school_id=%s ''', [session['userid'], session['school_id']])
     bookings = list(cur.fetchall())
     isbn = []
     title = []
@@ -767,7 +780,7 @@ def q5():
                         ON tt1.count = tt2.count
                         WHERE tt1.school_id <> tt2.school_id ) tt
                     ON u.school_id = tt.school_id
-                    WHERE u.role = 2 AND tt.count > 2
+                    WHERE u.role = 2 AND tt.count > 20
                     GROUP BY u.name
                     ORDER BY tt.count;''', [year,year])
         results = list(cur.fetchall())
