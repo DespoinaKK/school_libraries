@@ -1830,7 +1830,9 @@ def details(isbn):
     #find if user has booked or currently has the same book
     cur.execute('''SELECT ISBN FROM lending WHERE id_user = %s AND ISBN=%s AND return_date IS NULL''', [session['userid'], isbn])
     has_book = cur.fetchone()
-    if has_book is not None:
+    cur.execute('''SELECT ISBN FROM booking WHERE id_user = %s AND ISBN=%s''', [session['userid'], isbn])
+    res_book = cur.fetchone()
+    if has_book is not None or res_book is not None:
         can_book = False
     # find delayed books
     cur.execute('''SELECT count(*) FROM lending WHERE return_date IS NULL AND id_user = %s AND borrow_date < %s''', \
