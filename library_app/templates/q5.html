@@ -3,11 +3,19 @@
         <title>3.1.5</title>
     </head>
     <h1>Show managers that have accepted the same number of lendings (more than 20)</h1>
-    {% for number, names in d.items(): %}
-        <p><strong>Managers with {{number}} lendings:        </strong> {{names}}</p>
+    <form method="post">
+        <label for="year">Year:</label>
+        <input type="number" name="year" id="year" required>
         <br>
-        {% if not loop.last %}
-            <hr>
+        <input type="submit" value="Show results">
+        {% if d!=[] %}
+            {% for number, names in d.items(): %}
+            <p><strong>Managers with {{number}} lendings:        </strong> {{names}}</p>
+            <br>
+            {% if not loop.last %}
+                <hr>
+            {% endif %}
+            {% endfor %}
         {% endif %}
-    {% endfor %}
+    </form>
 </html>

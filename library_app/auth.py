@@ -756,19 +756,20 @@ def q4():
 @bp.route('/admin/q5', methods=('GET','POST'))
 @role_required([3])
 def q5():
-    if request.method == 'GET':
+    if request.method == 'POST':
+        year = request.form['year']
         cur = mysql.connection.cursor()
         cur.execute('''SELECT u.name, tt.count FROM users u
                     INNER JOIN (
                         SELECT tt1.school_id, tt1.count
-                        FROM (SELECT count(*) as count, school_id FROM lending GROUP BY school_id) tt1
-                        INNER JOIN (SELECT count(*) as count, school_id FROM lending GROUP BY school_id) tt2 
+                        FROM (SELECT count(*) as count, school_id FROM lending WHERE YEAR(borrow_date) = %s GROUP BY school_id) tt1
+                        INNER JOIN (SELECT count(*) as count, school_id FROM lending WHERE YEAR(borrow_date) = %s GROUP BY school_id) tt2 
                         ON tt1.count = tt2.count
                         WHERE tt1.school_id <> tt2.school_id ) tt
                     ON u.school_id = tt.school_id
-                    WHERE u.role = 2 AND tt.count > 20
+                    WHERE u.role = 2 AND tt.count > 2
                     GROUP BY u.name
-                    ORDER BY tt.count;''')
+                    ORDER BY tt.count;''', [year,year])
         results = list(cur.fetchall())
         cur.close()
         d = {}
@@ -779,8 +780,8 @@ def q5():
                 d[number]=[name]
         return render_template('q5.html', d=d)
     
-    if request.method == 'POST':
-        return render_template('q5.html')
+    if request.method == 'GET':
+        return render_template('q5.html', d=[])
 
 @bp.route('/admin/q6', methods=('GET', 'POST'))
 @role_required([3])
