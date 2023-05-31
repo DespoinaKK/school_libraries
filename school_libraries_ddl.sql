@@ -65,17 +65,7 @@ CREATE TABLE users_unregistered (
 	PRIMARY KEY(id_user)
 );
 
-CREATE TABLE managers_unregistered (
-	id_user INT AUTO_INCREMENT,
-	name VARCHAR(70) NOT NULL,
-	username VARCHAR(15) NOT NULL,
-	password VARCHAR(15) NOT NULL,
-	school_id INT,
-	role INT,
-	birthday DATE,
-	FOREIGN KEY (school_id) REFERENCES schools(school_id),
-	PRIMARY KEY(id_user)
-);
+
 
 CREATE TABLE category (
 	category_id INT AUTO_INCREMENT,
