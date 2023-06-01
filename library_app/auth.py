@@ -1832,10 +1832,16 @@ def details(isbn):
     has_book = cur.fetchone()
     if has_book is not None:
         can_book = False
+    cur.execute('''SELECT count(*) FROM booking WHERE id_user = %s AND ISBN=%s''',[session['userid'], isbn])
+    has_reserved = cur.fetchone()[0]
+    if has_reserved == 1:
+        can_book = False
     # find delayed books
+    has_delayed = False
     cur.execute('''SELECT count(*) FROM lending WHERE return_date IS NULL AND id_user = %s AND borrow_date < %s''', \
                 [session['userid'], datetime.now()-timedelta(days=7)])
     if cur.fetchone()[0]:
+        has_delayed = True
         can_book = False
     if no_of_active_bookings >= 2 and role == 0:
         can_book = False
@@ -1846,7 +1852,14 @@ def details(isbn):
     if request.method == 'POST':
         if request.form.get('details'):
             if not can_book:
-                flash("You have reached your upper limit for the week. Try again later, or return any books you may have borrowed.")
+                if has_book is not None:
+                    flash("There already is an active lending of this book.")
+                elif has_reserved == 1:
+                    flash("There already is an active reservation of this book.")
+                elif has_delayed:
+                    flash("Return any books you may have delayed.")
+                else:
+                    flash("You have reached the upper of active reservations. Try again later, or deactivate any other reservations.")
                 return render_template('book_details.html', details = details, categories = categories, authors = authors, path = path)
             now = datetime.now()
             dt_string = now.strftime("%Y/%m/%d %H:%M:%S")
