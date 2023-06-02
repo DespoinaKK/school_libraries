@@ -6,7 +6,7 @@
     <h1>Show and Edit School Information</h1>
     <form method="post">
         <label for="schools">Choose school:</label>
-        <select name="schools" id="schools">
+        <select name="schools" id="schools" required>
             <option></option>
             {% for sch in schools: %}
                 <option value="{{sch[0]}}">{{sch[1]}}</option>
