@@ -1150,8 +1150,11 @@ def manager_myschool_books():
 
     if request.method == 'POST':
         if request.form.get('search copies'):
-            copies = int(request.form['copies'])
-            flash(copies)
+            copies = request.form['copies']
+            if copies =='':
+                flash("Choose copies!")
+                return redirect('/manager/myschool/books')
+            copies = int(copies)
             cur = mysql.connection.cursor()
             cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
                         WHERE bs.copies_available = %s AND bs.school_id = %s''', [copies, session['school_id']])
@@ -1245,14 +1248,18 @@ def manager_books():
         if request.form.get('only my school'):
             return redirect('/manager/myschool/books')
         if request.form.get('search copies'):
-            copies = int(request.form['copies'])
-            flash(copies)
-            cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+            copies = request.form['copies']
+            if copies=='':
+                flash('Choose copies!')
+                return redirect('/manager/books')
+            else:
+                copies = int(copies)
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
                         WHERE bs.copies_available = %s AND bs.school_id = %s''', [copies, session['school_id']])
-            books = cur.fetchall()
-            cur.close()
-            return render_template('search.html', books = books)
+                books = cur.fetchall()
+                cur.close()
+                return render_template('search.html', books = books)
         if request.form.get('search author'):
             author = request.form['author']
             cur = mysql.connection.cursor()
