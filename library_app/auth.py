@@ -1404,7 +1404,20 @@ def manager_book_details(isbn):
                 query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({category}, '{isbn}');"
                 cur.execute(query)
                 mysql.connection.commit()
-            
+            #check if new category added
+            new_category = request.form['new category']
+            if new_category:
+                cur = mysql.connection.cursor()
+                query = f"INSERT INTO category (name) VALUES ('{new_category}')"
+                cur.execute(query)
+                mysql.connection.commit()
+                query = f"SELECT category_id FROM category WHERE name='{new_category}'"
+                cur.execute(query)
+                new_cat_id = int(cur.fetchone()[0])
+                query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({new_cat_id}, '{isbn}');"
+                cur.execute(query)
+                mysql.connection.commit()
+
             f = request.files['file']
             if f.filename != '':
                 # Save the uploaded file and update the database
