@@ -1226,7 +1226,7 @@ def manager_myschool_books():
                 return render_template('search.html', books = book)
             else:
                 flash("No results found")
-                return redirect('/manager/books')
+                return redirect('/manager/myschool/books')
 
         for key,value in request.form.items():
             if value == 'Details':
@@ -1316,8 +1316,7 @@ def manager_books():
         if request.form.get('search title'):
             title = request.form['title']
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
-                  WHERE b.title LIKE '%{title}%' AND bs.school_id = {school_id};'''.format(title=title,school_id=session['school_id']))
+            cur.execute('''SELECT ISBN, title FROM books WHERE title LIKE '%{title}%';'''.format(title=title))
             book = cur.fetchall()
             cur.close()
             if book:
