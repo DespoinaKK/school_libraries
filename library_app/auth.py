@@ -1150,8 +1150,11 @@ def manager_myschool_books():
 
     if request.method == 'POST':
         if request.form.get('search copies'):
-            copies = int(request.form['copies'])
-            flash(copies)
+            copies = request.form['copies']
+            if copies =='':
+                flash("Choose copies!")
+                return redirect('/manager/myschool/books')
+            copies = int(copies)
             cur = mysql.connection.cursor()
             cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
                         WHERE bs.copies_available = %s AND bs.school_id = %s''', [copies, session['school_id']])
@@ -1223,7 +1226,7 @@ def manager_myschool_books():
                 return render_template('search.html', books = book)
             else:
                 flash("No results found")
-                return redirect('/manager/books')
+                return redirect('/manager/myschool/books')
 
         for key,value in request.form.items():
             if value == 'Details':
@@ -1245,14 +1248,18 @@ def manager_books():
         if request.form.get('only my school'):
             return redirect('/manager/myschool/books')
         if request.form.get('search copies'):
-            copies = int(request.form['copies'])
-            flash(copies)
-            cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
+            copies = request.form['copies']
+            if copies=='':
+                flash('Choose copies!')
+                return redirect('/manager/books')
+            else:
+                copies = int(copies)
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
                         WHERE bs.copies_available = %s AND bs.school_id = %s''', [copies, session['school_id']])
-            books = cur.fetchall()
-            cur.close()
-            return render_template('search.html', books = books)
+                books = cur.fetchall()
+                cur.close()
+                return render_template('search.html', books = books)
         if request.form.get('search author'):
             author = request.form['author']
             cur = mysql.connection.cursor()
@@ -1309,8 +1316,7 @@ def manager_books():
         if request.form.get('search title'):
             title = request.form['title']
             cur = mysql.connection.cursor()
-            cur.execute('''SELECT b.ISBN, b.title FROM books b INNER JOIN book_school bs ON b.ISBN = bs.ISBN \
-                  WHERE b.title LIKE '%{title}%' AND bs.school_id = {school_id};'''.format(title=title,school_id=session['school_id']))
+            cur.execute('''SELECT ISBN, title FROM books WHERE title LIKE '%{title}%';'''.format(title=title))
             book = cur.fetchall()
             cur.close()
             if book:
@@ -1398,7 +1404,20 @@ def manager_book_details(isbn):
                 query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({category}, '{isbn}');"
                 cur.execute(query)
                 mysql.connection.commit()
-            
+            #check if new category added
+            new_category = request.form['new category']
+            if new_category:
+                cur = mysql.connection.cursor()
+                query = f"INSERT INTO category (name) VALUES ('{new_category}')"
+                cur.execute(query)
+                mysql.connection.commit()
+                query = f"SELECT category_id FROM category WHERE name='{new_category}'"
+                cur.execute(query)
+                new_cat_id = int(cur.fetchone()[0])
+                query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({new_cat_id}, '{isbn}');"
+                cur.execute(query)
+                mysql.connection.commit()
+
             f = request.files['file']
             if f.filename != '':
                 # Save the uploaded file and update the database
