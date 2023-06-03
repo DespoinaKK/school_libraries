@@ -15,9 +15,9 @@ def make_image(n, u, b, r, s, image_name):
     I1 = ImageDraw.Draw(img)
  
     # Custom font style and font size
-    myFont1 = ImageFont.truetype('NotoSans-Bold.ttf', 50)
-    myFont2 = ImageFont.truetype('NotoSans-Regular.ttf', 40) 
-    myFont3 = ImageFont.truetype('NotoSans-BoldItalic.ttf', 40)
+    myFont1 = ImageFont.truetype('{path}/library_app/static/NotoSans-Bold.ttf'.format(path = os.path.dirname(os.path.abspath("author_book.txt"))), 50)
+    myFont2 = ImageFont.truetype('{path}/library_app/static/NotoSans-Regular.ttf'.format(path = os.path.dirname(os.path.abspath("author_book.txt"))), 40) 
+    myFont3 = ImageFont.truetype('{path}/library_app/static/NotoSans-BoldItalic.ttf'.format(path = os.path.dirname(os.path.abspath("author_book.txt"))), 40)
     
     school = s + "\nLibrary"
     I1.multiline_text((46, 46), school, font=myFont1, fill =(255, 255, 255))
@@ -37,7 +37,7 @@ def make_image(n, u, b, r, s, image_name):
     img.save(image_data, "PNG")
     encoded_img = base64.b64encode(image_data.getvalue())   
     img_data = encoded_img
-    img.show()
+    #img.show()
     #img.save('{path}\\library_app\\static\\{image_name}.jpg'.format(path = os.path.dirname(os.path.abspath("author_book.txt")), image_name=image_name))
     
     return img_data.decode('utf-8')
