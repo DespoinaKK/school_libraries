@@ -9,8 +9,8 @@
         <br>
         <input type="submit" value="Show results">
         {% if d!=[] %}
-            {% for number, names in d.items(): %}
-            <p><strong>Managers with {{number}} lendings:        </strong> {{names}}</p>
+            {% for result in results: %}
+            <p><strong>Managers with {{result[1]}} lendings:        </strong> {{result[0]}}</p>
             <br>
             {% if not loop.last %}
                 <hr>

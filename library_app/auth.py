@@ -772,26 +772,26 @@ def q5():
     if request.method == 'POST':
         year = request.form['year']
         cur = mysql.connection.cursor()
-        cur.execute('''SELECT u.name, tt.count FROM users u
-                    INNER JOIN (
-                        SELECT tt1.school_id, tt1.count
-                        FROM (SELECT count(*) as count, school_id FROM lending WHERE YEAR(borrow_date) = %s GROUP BY school_id) tt1
-                        INNER JOIN (SELECT count(*) as count, school_id FROM lending WHERE YEAR(borrow_date) = %s GROUP BY school_id) tt2 
-                        ON tt1.count = tt2.count
-                        WHERE tt1.school_id <> tt2.school_id ) tt
-                    ON u.school_id = tt.school_id
-                    WHERE u.role = 2 AND tt.count > 20
-                    GROUP BY u.name
-                    ORDER BY tt.count;''', [year,year])
-        results = list(cur.fetchall())
+        cur.execute('''SELECT GROUP_CONCAT(u.name), tt.count FROM users u
+        INNER JOIN (
+            SELECT tt1.school_id, tt1.count
+            FROM (SELECT count(*) as count, school_id FROM lending WHERE YEAR(borrow_date) = %s GROUP BY school_id) tt1
+            INNER JOIN (SELECT count(*) as count, school_id FROM lending WHERE YEAR(borrow_date) = %s GROUP BY school_id) tt2 
+            ON tt1.count = tt2.count
+            WHERE tt1.school_id <> tt2.school_id ) tt
+        ON u.school_id = tt.school_id
+        WHERE u.role = 2 AND tt.count > 20
+        GROUP BY tt.count
+        ORDER BY tt.count;''', [year,year])
+        results = cur.fetchall()
         cur.close()
-        d = {}
-        for name, number in results:
-            if number in d:
-                d[number].append(name)
-            else:
-                d[number]=[name]
-        return render_template('q5.html', d=d)
+        # d = {}
+        # for name, number in results:
+        #     if number in d:
+        #         d[number].append(name)
+        #     else:
+        #         d[number]=[name]
+        return render_template('q5.html', results=results)
     
     if request.method == 'GET':
         return render_template('q5.html', d=[])
@@ -801,22 +801,19 @@ def q5():
 def q6():
     if request.method == 'GET':
         cur = mysql.connection.cursor()
-        cur.execute('''SELECT c1.name as 'Category 1', c2.name as 'Category 2', cat_ids.cnt FROM (category c1, category c2)
-                    INNER JOIN
-                        (SELECT cj.cat1 as ct1, cj.cat2 as ct2, count(*) as cnt FROM
-                            (SELECT cj1.category_id as cat1, cj2.category_id as cat2 FROM 
-                                    (SELECT c.category_id, c.ISBN FROM book_category c
-                                    INNER JOIN lending l
-                                    ON c.ISBN = l.ISBN) cj1
-                                CROSS JOIN 
-                                    (SELECT c.category_id, c.ISBN FROM book_category c
-                                    INNER JOIN lending l
-                                    ON c.ISBN = l.ISBN) cj2 
-                            WHERE cj1.ISBN = cj2.ISBN AND cj1.category_id < cj2.category_id
-                            ORDER BY cat1, cat2) cj
-                        GROUP BY cj.cat1, cj.cat2
-                        ORDER BY count(*) DESC) cat_ids
-                    ON c1.category_id = cat_ids.ct1 AND c2.category_id = cat_ids.ct2;''')
+        cur.execute('''        SELECT cj1.name as cat1, cj2.name as cat2, count(*) as cnt FROM 
+                (SELECT c.category_id, c.name, l.lending_id FROM book_category bc
+                INNER JOIN lending l
+                ON bc.ISBN = l.ISBN
+                INNER JOIN category c ON c.category_id = bc.category_id) cj1
+            CROSS JOIN 
+                (SELECT c.category_id, c.name, l.lending_id FROM book_category bc
+                INNER JOIN lending l
+                ON bc.ISBN = l.ISBN
+                INNER JOIN category c ON c.category_id = bc.category_id) cj2 
+         WHERE cj1.lending_id = cj2.lending_id AND cj1.category_id < cj2.category_id
+         GROUP BY cj1.name, cj2.name
+         ORDER BY cnt DESC;''')
         results = list(cur.fetchall())
         cur.close()
         return render_template('q6.html', results=results)
@@ -1077,6 +1074,14 @@ def add_books():
             language = request.form['language']
             keywords = request.form['keywords']
             f = request.files['file']
+            new_categories = request.form.getlist('options[]')
+            new_category = request.form['new category']
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT category_id, name FROM category")
+            categories = cur.fetchall()
+            if new_categories==[] and not new_category:
+                flash("You have to add at least one category!")
+                return render_template('add_books.html', exists=1, isbn = isbn, copies = copies, categories=categories)
             filename = f"{isbn}.jpg"
             f.save(f"library_app/static/cover_pages/{filename}") 
             cur = mysql.connection.cursor()
@@ -1097,8 +1102,8 @@ def add_books():
                     author_id = cur.fetchall()[0]
                 cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s)", [author_id, isbn])
                 mysql.connection.commit()
-            categories = request.form.getlist('options[]')  
-            for category in categories:
+              
+            for category in new_categories:
                 query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({category}, '{isbn}');"
                 cur.execute(query)
                 mysql.connection.commit()
@@ -1383,18 +1388,27 @@ def manager_book_details(isbn):
         if request.form.get('Save'):
             title = request.form['title']
             isbn = request.form['isbn']
-            authors = request.form['authors']
+            new_authors = request.form['authors']
             publisher = request.form['publisher']
             page_number = request.form['page number']
             summary = request.form['summary']
             language = request.form['language']
             keywords = request.form['keywords']
+            categories1 = request.form.getlist('options[]')
+            new_category = request.form['new category']
+            if categories1==[] and not new_category:
+                cur = mysql.connection.cursor()
+                cur.execute('''SELECT category_id, name FROM category''')
+                all_categories=cur.fetchall()
+                flash('You have to add at least one category!')
+                return render_template('edit_book.html', details = details, authors = authors, bk_categories = [row[0] for row in categories], all_categories=all_categories, path = path)
+            
             cur = mysql.connection.cursor()
             query = f"UPDATE books SET title='{title}', publisher='{publisher}', page_number={page_number}, summary='{summary}',\
                   book_language='{language}', keywords='{keywords}' WHERE ISBN='{isbn}';"
             cur.execute(query)
             mysql.connection.commit()
-            author_list=authors.split(',')
+            author_list=new_authors.split(',')
             query =f"DELETE FROM author_book WHERE ISBN='{isbn}';"
             cur.execute(query)
             mysql.connection.commit()
@@ -1407,7 +1421,7 @@ def manager_book_details(isbn):
                     mysql.connection.commit()
                     query = f"SELECT author_id FROM author WHERE name='{author}';"
                     cur.execute(query)
-                    author_id == cur.fetchone()[0]
+                    author_id = cur.fetchone()[0]
                 cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s);", [author_id, isbn])
                 mysql.connection.commit()
             categories = request.form.getlist('options[]')  

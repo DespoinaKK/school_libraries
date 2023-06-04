@@ -49,38 +49,34 @@ ON c.category_id = bc.category_id
 WHERE c.name = 'Travel' AND u.role = 1 AND YEAR(l.borrow_date) = YEAR(CURDATE())
 
 -- 3.1.5 OK 
--- Returns name of school manager and total number of lendings
-SELECT u.name, tt.count FROM users u
+-- Show managers that have accepted the same number of lendings in same year (more than 20)
+SELECT GROUP_CONCAT(u.name), tt.count FROM users u
 INNER JOIN (
     SELECT tt1.school_id, tt1.count
-    FROM (SELECT count(*) as count, school_id FROM lending GROUP BY school_id) tt1
-    INNER JOIN (SELECT count(*) as count, school_id FROM lending GROUP BY school_id) tt2 
+    FROM (SELECT count(*) as count, school_id FROM lending WHERE YEAR(borrow_date) = 2022 GROUP BY school_id) tt1
+    INNER JOIN (SELECT count(*) as count, school_id FROM lending WHERE YEAR(borrow_date) = 2022 GROUP BY school_id) tt2 
     ON tt1.count = tt2.count
     WHERE tt1.school_id <> tt2.school_id ) tt
 ON u.school_id = tt.school_id
 WHERE u.role = 2 AND tt.count > 20
-GROUP BY u.name
+GROUP BY tt.count
 ORDER BY tt.count;
 
 -- 3.1.6 OK 
 -- Returns top 3 couples of categories that show up in lendings
-SELECT c1.name as 'Category 1', c2.name as 'Category 2', cat_ids.cnt FROM (category c1, category c2)
-INNER JOIN
-    (SELECT cj.cat1 as ct1, cj.cat2 as ct2, count(*) as cnt FROM
-        (SELECT cj1.category_id as cat1, cj2.category_id as cat2 FROM 
-                (SELECT c.category_id, c.ISBN FROM book_category c
+        SELECT cj1.name as cat1, cj2.name as cat2, count(*) as cnt FROM 
+                (SELECT c.category_id, c.name, l.lending_id FROM book_category bc
                 INNER JOIN lending l
-                ON c.ISBN = l.ISBN) cj1
+                ON bc.ISBN = l.ISBN
+                INNER JOIN category c ON c.category_id = bc.category_id) cj1
             CROSS JOIN 
-                (SELECT c.category_id, c.ISBN FROM book_category c
+                (SELECT c.category_id, c.name, l.lending_id FROM book_category bc
                 INNER JOIN lending l
-                ON c.ISBN = l.ISBN) cj2 
-        WHERE cj1.ISBN = cj2.ISBN AND cj1.category_id < cj2.category_id
-        ORDER BY cat1, cat2) cj
-    GROUP BY cj.cat1, cj.cat2
-    ORDER BY count(*) DESC) cat_ids
-ON c1.category_id = cat_ids.ct1 AND c2.category_id = cat_ids.ct2
-
+                ON bc.ISBN = l.ISBN
+                INNER JOIN category c ON c.category_id = bc.category_id) cj2 
+         WHERE cj1.lending_id = cj2.lending_id AND cj1.category_id < cj2.category_id
+         GROUP BY cj1.name, cj2.name
+         ORDER BY cnt DESC;
 -- 3.1.7 OK
 -- Returns the authors that have written at least 5 books less than the author of the most books
 SELECT a.name, a_with_less_books.cnt FROM author a
