@@ -25,11 +25,11 @@
     <label for="role">Role: Student</label>
     {% endif %}
     {% if profile[5] == 1:%}
-    <h4>You can change your username, password, name and birthday. 
+    <h4>You can change your password, name and birthday. 
         For any further change or questions, ask your school's library manager.</h4>
     <br>
     <label for="username">Username:</label>
-    <input name="username" id="username" value="{{profile[2]}}" required>
+    <input name="username" id="username" value="{{profile[2]}}" readonly>
     <br>
     <label for="password">Password:</label>
     <input type='password' name="password" id="password" value="{{profile[3]}}" required>
