@@ -38,7 +38,7 @@ def unauthorized():
 
 @bp.route('/', methods=('GET', 'POST'))
 def home():
-    return render_template('base.html', session = session)
+    return render_template('home.html')
 
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
