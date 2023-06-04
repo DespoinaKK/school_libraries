@@ -58,7 +58,7 @@ INNER JOIN (
     ON tt1.count = tt2.count
     WHERE tt1.school_id <> tt2.school_id ) tt
 ON u.school_id = tt.school_id
-WHERE u.role = 2 AND tt.count > 2
+WHERE u.role = 2 AND tt.count > 20
 GROUP BY u.name
 ORDER BY tt.count;
 
