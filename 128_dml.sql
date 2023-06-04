@@ -1,3 +1,11 @@
+INSERT INTO `schools` (`school_id`, `name`, `director`, `address`, `city`, `post_code`, `telephone_number`, `email`) VALUES
+(1, 'Athenaeum High School', 'Maria Georgiou', '2 Plato Street', 'Athens', '10438', '2105551234', 'athenaeumhigh@example.com'),
+(2, 'Eureka College', 'Nikos Papadopoulos', '3 Socrates Avenue', 'Thessaloniki', '54623', '2310555123', 'eurekacollege@example.com'),
+(3, 'Olympus Academy', 'Eleni Katsikaris', '1 Pindarou Street', 'Piraeus', '18540', '2105552345', 'olympusacademy@example.com'),
+(4, 'Delphi School', 'Stavros Athanasiou', '4 Pythia Street', 'Delphi', '33054', '2269555123', 'delphischool@example.com'),
+(9, '1o Gel Kalamatas', 'Stylianidis', 'Lykourgou 5', 'Kalamata', '24131', '2721085291', '1gel@gmail.com');
+
+
 INSERT INTO `users` (`id_user`, `name`, `username`, `password`, `school_id`, `role`, `birthday`, `active`) VALUES
 (1, 'John Doe', 'johndoe', 'password1', 1, 0, '2006-07-03', b'1'),
 (2, 'Jane Doe', 'janedoe', 'password2', 1, 0, '2007-09-28', b'1'),
@@ -58,13 +66,6 @@ INSERT INTO `users` (`id_user`, `name`, `username`, `password`, `school_id`, `ro
 (63, 'anast poul', 'anast', '1', 4, 0, '2009-08-15', b'0'),
 (64, 'Harris Platanos', 'harrisp', '28', 4, 0, '2002-05-02', b'1');
 
-
-INSERT INTO `schools` (`school_id`, `name`, `director`, `address`, `city`, `post_code`, `telephone_number`, `email`) VALUES
-(1, 'Athenaeum High School', 'Maria Georgiou', '2 Plato Street', 'Athens', '10438', '2105551234', 'athenaeumhigh@example.com'),
-(2, 'Eureka College', 'Nikos Papadopoulos', '3 Socrates Avenue', 'Thessaloniki', '54623', '2310555123', 'eurekacollege@example.com'),
-(3, 'Olympus Academy', 'Eleni Katsikaris', '1 Pindarou Street', 'Piraeus', '18540', '2105552345', 'olympusacademy@example.com'),
-(4, 'Delphi School', 'Stavros Athanasiou', '4 Pythia Street', 'Delphi', '33054', '2269555123', 'delphischool@example.com'),
-(9, '1o Gel Kalamatas', 'Stylianidis', 'Lykourgou 5', 'Kalamata', '24131', '2721085291', '1gel@gmail.com');
 
 
 INSERT INTO `books` (`title`, `publisher`, `ISBN`, `page_number`, `summary`, `book_language`, `keywords`, `cover`) VALUES
