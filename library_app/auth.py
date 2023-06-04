@@ -498,7 +498,7 @@ def admin_home():
             return redirect('admin/q7')
         
         if request.form.get('backup'):
-            command = 'mysqldump --socket=/var/run/mysqld/mysqld.sock -h 127.0.0.1 -u root --password="" school_libraries > backup.sql'
+            command = 'mysqldump --socket=/var/run/mysqld/mysqld.sock -h 127.0.0.1 -u root --password="" school_libraries_128 > backup.sql'
             process = subprocess.run(command, shell=True)
             
             if process.returncode == 0:
@@ -517,7 +517,7 @@ def admin_home():
             if f.filename.endswith('.sql'):
                 filename = f"restored_db.sql"
                 f.save(f"library_app/{filename}")
-                command = 'mysql --socket=/var/run/mysqld/mysqld.sock -h 127.0.0.1 -u root --password="" school_libraries < backup.sql'
+                command = 'mysql --socket=/var/run/mysqld/mysqld.sock -h 127.0.0.1 -u root --password="" school_libraries_128 < backup.sql'
                 process = subprocess.run(command, shell=True)
 
                 if process.returncode == 0:
@@ -1091,14 +1091,28 @@ def add_books():
                     query = f"INSERT INTO author (name) VALUES ('{author}');"
                     cur.execute(query) 
                     mysql.connection.commit()
-                    query = f"SELECT author_id FROM author WHERE name='{author}';"
-                    cur.execute(query)
-                    author_id == cur.fetchone()
-                cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s);", [author_id, isbn])
+                    cur.close()
+                    cur = mysql.connection.cursor()
+                    cur.execute("SELECT author_id FROM author WHERE name=%s;", [author])
+                    author_id = cur.fetchall()[0]
+                cur.execute("INSERT INTO author_book (author_id, ISBN) VALUES (%s, %s)", [author_id, isbn])
                 mysql.connection.commit()
             categories = request.form.getlist('options[]')  
             for category in categories:
                 query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({category}, '{isbn}');"
+                cur.execute(query)
+                mysql.connection.commit()
+            
+            new_category = request.form['new category']
+            if new_category:
+                cur = mysql.connection.cursor()
+                query = f"INSERT INTO category (name) VALUES ('{new_category}')"
+                cur.execute(query)
+                mysql.connection.commit()
+                query = f"SELECT category_id FROM category WHERE name='{new_category}'"
+                cur.execute(query)
+                new_cat_id = int(cur.fetchone()[0])
+                query = f"INSERT INTO book_category (category_id, ISBN) VALUES ({new_cat_id}, '{isbn}');"
                 cur.execute(query)
                 mysql.connection.commit()
             cur.execute("INSERT INTO book_school (ISBN, school_id, copies_available) VALUES (%s, %s, %s)",[isbn, session['school_id'], copies])

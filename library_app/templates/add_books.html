@@ -27,7 +27,7 @@
             <input type="publisher" id="publisher" name="publisher" required>
             <br>
             <label for="page Number"><strong>Page Number:</strong></label>
-            <input type="page number" id="page number" name="page number" required>
+            <input type="number" min="1" id="page number" name="page number" required>
             <br>
             <label for="summary"><strong>Summary:</strong></label>
             <input type="summary" id="summary" name="summary" required>
@@ -47,12 +47,16 @@
             {% endfor %}
             <br>
             <br>
+            <label for="new category"><strong>Add new Category:</strong></label>
+            <input type="new category" id="new category" name="new category">
+            <br>
+            <br>
             <label for="copies"><strong>Copies Added:</strong></label>
             <input type="number" min="1" name="copies" id="copies" value="copies" required>
             <br>
             <br>
             <p>Upload book cover</p>
-            <input type=file name=file>
+            <input type=file name=file required>
             <br>
             <br>
             <input type="submit" name="Save" value="Save">
